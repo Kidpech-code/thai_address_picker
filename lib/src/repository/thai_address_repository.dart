@@ -224,6 +224,62 @@ class ThaiAddressRepository {
         .toList();
   }
 
+  /// Search zip codes with auto-suggestion data
+  /// Returns list of zip code suggestions with full address info
+  /// Algorithm: O(n) scan with early exit after maxResults
+  /// For better performance, results are limited and include full address context
+  List<ZipCodeSuggestion> searchZipCodes(String query, {int maxResults = 20}) {
+    _ensureInitialized();
+
+    if (query.isEmpty) return [];
+
+    // Use prefix matching for better UX
+    // Only show results that start with the query for cleaner suggestions
+    final suggestions = <String, ZipCodeSuggestion>{};
+
+    for (var subDistrict in _subDistricts!) {
+      // Stop if we have enough results (performance optimization)
+      if (suggestions.length >= maxResults) break;
+
+      // Check if zip code starts with query (prefix match)
+      if (subDistrict.zipCode.startsWith(query)) {
+        final key = '${subDistrict.zipCode}_${subDistrict.id}';
+
+        // Skip if we already have this exact combination
+        if (suggestions.containsKey(key)) continue;
+
+        final district = getDistrictById(subDistrict.districtId);
+        final province = district != null
+            ? getProvinceById(district.provinceId)
+            : null;
+
+        suggestions[key] = ZipCodeSuggestion(
+          zipCode: subDistrict.zipCode,
+          subDistrict: subDistrict,
+          district: district,
+          province: province,
+        );
+      }
+    }
+
+    // Sort by zip code for consistent ordering
+    final sortedList = suggestions.values.toList()
+      ..sort((a, b) => a.zipCode.compareTo(b.zipCode));
+
+    return sortedList;
+  }
+
+  /// Get all zip codes (for autocomplete list)
+  /// Returns unique zip codes sorted
+  List<String> getAllZipCodes() {
+    _ensureInitialized();
+    final uniqueZips = <String>{};
+    for (var subDistrict in _subDistricts!) {
+      uniqueZips.add(subDistrict.zipCode);
+    }
+    return uniqueZips.toList()..sort();
+  }
+
   /// Get district and province info from subdistrict
   Map<String, dynamic> getFullAddressFromSubDistrict(SubDistrict subDistrict) {
     final district = getDistrictById(subDistrict.districtId);
@@ -236,5 +292,38 @@ class ThaiAddressRepository {
       'district': district,
       'province': province,
     };
+  }
+}
+
+/// Zip code suggestion data class for autocomplete
+class ZipCodeSuggestion {
+  final String zipCode;
+  final SubDistrict subDistrict;
+  final District? district;
+  final Province? province;
+
+  ZipCodeSuggestion({
+    required this.zipCode,
+    required this.subDistrict,
+    this.district,
+    this.province,
+  });
+
+  /// Display text for suggestion dropdown
+  String get displayText {
+    final parts = <String>[zipCode];
+    if (subDistrict.nameTh.isNotEmpty) parts.add(subDistrict.nameTh);
+    if (district?.nameTh != null) parts.add(district!.nameTh);
+    if (province?.nameTh != null) parts.add(province!.nameTh);
+    return parts.join(' • ');
+  }
+
+  /// Secondary display text (English)
+  String get displayTextEn {
+    final parts = <String>[];
+    if (subDistrict.nameEn.isNotEmpty) parts.add(subDistrict.nameEn);
+    if (district?.nameEn != null) parts.add(district!.nameEn);
+    if (province?.nameEn != null) parts.add(province!.nameEn);
+    return parts.isEmpty ? '' : parts.join(' • ');
   }
 }

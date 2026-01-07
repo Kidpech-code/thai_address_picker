@@ -5,6 +5,7 @@ import '../models/province.dart';
 import '../models/district.dart';
 import '../models/sub_district.dart';
 import '../providers/thai_address_providers.dart';
+import 'zip_code_autocomplete.dart';
 
 /// A complete Thai address form with 4 fields
 class ThaiAddressForm extends ConsumerStatefulWidget {
@@ -219,22 +220,23 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
         ),
         const SizedBox(height: 16),
 
-        // Zip Code TextField
-        TextFormField(
+        // Zip Code Autocomplete with Smart Suggestions
+        ZipCodeAutocomplete(
           controller: _zipCodeController,
           decoration:
               widget.zipCodeDecoration ??
               InputDecoration(
                 labelText: widget.useThai ? 'รหัสไปรษณีย์' : 'Zip Code',
+                hintText: widget.useThai ? 'กรอก 5 หลัก' : 'Enter 5 digits',
+                helperText: widget.useThai
+                    ? 'ระบบจะแนะนำที่อยู่อัตโนมัติ'
+                    : 'Auto-suggestions enabled',
                 border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.local_post_office),
                 errorText: state.error,
               ),
-          style: widget.textStyle,
-          keyboardType: TextInputType.number,
-          maxLength: 5,
           enabled: widget.enabled,
-          onChanged: (value) {
-            notifier.setZipCode(value);
+          onZipCodeSelected: (zipCode) {
             _notifyChange();
           },
         ),

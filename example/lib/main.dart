@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:thai_address_picker/thai_address_picker.dart';
+import 'custom_ui_example.dart';
+import 'zip_code_lookup_example.dart';
+import 'zip_code_autocomplete_example.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -36,13 +39,79 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Thai Address Picker Example'),
+        title: const Text('Thai Address Picker Examples'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Navigation to examples
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'More Examples',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      leading: const Icon(Icons.edit_note),
+                      title: const Text('Custom UI Example'),
+                      subtitle: const Text('ใช้เฉพาะข้อมูล ไม่ใช้ UI Widgets'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const CustomAddressFormExample(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.search),
+                      title: const Text('Zip Code Lookup'),
+                      subtitle: const Text('ค้นหาที่อยู่จากรหัสไปรษณีย์'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ZipCodeLookupExample(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.auto_awesome),
+                      title: const Text('Zip Code Autocomplete ✨'),
+                      subtitle: const Text(
+                        'Auto-suggestion แก้ปัญหาหลายพื้นที่',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ZipCodeAutocompleteExample(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Example 1: Direct Form
             Card(
               child: Padding(

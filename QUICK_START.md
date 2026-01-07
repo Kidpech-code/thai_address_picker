@@ -62,6 +62,42 @@ final address = await ThaiAddressPicker.showDialog(
 );
 ```
 
+### Use Data Only (Custom UI)
+
+```dart
+class CustomForm extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(thaiAddressRepositoryProvider);
+    final provinces = repo.provinces;
+
+    // Build your own UI with the data
+    return YourCustomDropdown(items: provinces);
+  }
+}
+```
+
+### Reverse Lookup (Zip → Address)
+
+```dart
+TextField(
+  decoration: InputDecoration(labelText: 'รหัสไปรษณีย์'),
+  onChanged: (zip) {
+    // Auto-fills province, district, sub-district
+    ref.read(thaiAddressNotifierProvider.notifier).setZipCode(zip);
+  },
+)
+
+// Read auto-filled data
+final state = ref.watch(thaiAddressNotifierProvider);
+print('จังหวัด: ${state.selectedProvince?.nameTh}');
+```
+
+useThai: false, // English labels
+);
+
+````
+
 ---
 
 ## 🎨 Customization Cheat Sheet
@@ -77,7 +113,7 @@ ThaiAddressForm(
   ),
   // ... same for district, subDistrict, zipCode
 )
-```
+````
 
 ### Custom Text Style
 

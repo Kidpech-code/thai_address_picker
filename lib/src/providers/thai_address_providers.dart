@@ -121,15 +121,41 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   /// Reverse lookup: Set zip code and auto-fill address if unique
   void setZipCode(String zipCode) {
     if (zipCode.isEmpty) {
-      state = state.copyWith(clearZipCode: true, clearSubDistrict: true);
+      state = state.copyWith(
+        clearZipCode: true,
+        clearSubDistrict: true,
+        clearDistrict: true,
+        clearProvince: true,
+        error: null,
+      );
       return;
     }
 
+    // For partial input (less than 5 digits), just store zip code without error
+    // This allows autocomplete to work while typing
+    if (zipCode.length < 5) {
+      state = state.copyWith(
+        zipCode: zipCode,
+        error: null,
+        clearSubDistrict: true,
+        clearDistrict: true,
+        clearProvince: true,
+      );
+      return;
+    }
+
+    // For complete 5-digit zip code, do full lookup
     final subDistricts = _repository.getSubDistrictsByZipCode(zipCode);
 
     if (subDistricts.isEmpty) {
       // Invalid zip code
-      state = state.copyWith(zipCode: zipCode, error: 'ไม่พบรหัสไปรษณีย์นี้');
+      state = state.copyWith(
+        zipCode: zipCode,
+        error: 'ไม่พบรหัสไปรษณีย์นี้',
+        clearSubDistrict: true,
+        clearDistrict: true,
+        clearProvince: true,
+      );
     } else if (subDistricts.length == 1) {
       // Unique zip code - auto-fill everything
       final subDistrict = subDistricts.first;
@@ -147,7 +173,13 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
       );
     } else {
       // Multiple subdistricts with same zip code - just set zip code
-      state = state.copyWith(zipCode: zipCode, error: null);
+      state = state.copyWith(
+        zipCode: zipCode,
+        error: null,
+        clearSubDistrict: true,
+        clearDistrict: true,
+        clearProvince: true,
+      );
     }
   }
 
@@ -191,6 +223,24 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
     return _repository.searchSubDistricts(
       query,
       districtId: state.selectedDistrict?.id,
+    );
+  }
+
+  /// Search zip codes with suggestions
+  /// Returns list of ZipCodeSuggestion for autocomplete
+  List<ZipCodeSuggestion> searchZipCodes(String query, {int maxResults = 20}) {
+    return _repository.searchZipCodes(query, maxResults: maxResults);
+  }
+
+  /// Select from zip code suggestion
+  /// Auto-fills all related fields (subdistrict, district, province)
+  void selectZipCodeSuggestion(ZipCodeSuggestion suggestion) {
+    state = ThaiAddressState(
+      selectedProvince: suggestion.province,
+      selectedDistrict: suggestion.district,
+      selectedSubDistrict: suggestion.subDistrict,
+      zipCode: suggestion.zipCode,
+      error: null,
     );
   }
 }

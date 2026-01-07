@@ -30,7 +30,7 @@ void main() {
 }
 ```
 
-#### 3. Three Ways to Use
+#### 3. Four Ways to Use
 
 ##### Option A: Inline Form Widget
 
@@ -59,6 +59,22 @@ final address = await ThaiAddressPicker.showDialog(
   context: context,
   useThai: true,
 );
+```
+
+##### Option D: Use Data Only (No UI Widgets)
+
+```dart
+// Access data directly to build your own UI
+class CustomAddressWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repository = ref.watch(thaiAddressRepositoryProvider);
+    final provinces = repository.provinces;
+
+    // Build your own dropdown/autocomplete/whatever UI
+    return YourCustomWidget(data: provinces);
+  }
+}
 ```
 
 ### 🎨 Customization Examples
@@ -140,7 +156,141 @@ class SearchWidget extends ConsumerWidget {
 }
 ```
 
-### 📊 Data Models
+### � Reverse Lookup: Zip Code → Address
+
+#### Simple Reverse Lookup
+
+```dart
+class ZipCodeFirstForm extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<ZipCodeFirstForm> createState() => _ZipCodeFirstFormState();
+}
+
+class _ZipCodeFirstFormState extends ConsumerState<ZipCodeFirstForm> {
+  final _zipController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(thaiAddressNotifierProvider);
+    final notifier = ref.read(thaiAddressNotifierProvider.notifier);
+
+    return Column(
+      children: [
+        // 1. กรอกรหัสไปรษณีย์ก่อน
+        TextField(
+          controller: _zipController,
+          decoration: InputDecoration(
+            labelText: 'รหัสไปรษณีย์',
+            hintText: 'กรอก 5 หลัก เช่น 10110',
+          ),
+          keyboardType: TextInputType.number,
+          maxLength: 5,
+          onChanged: (zip) {
+            // 2. ระบบจะค้นหาและเติมที่อยู่โดยอัตโนมัติ
+            notifier.setZipCode(zip);
+          },
+        ),
+
+        SizedBox(height: 20),
+
+        // 3. แสดงผลลัพธ์ที่ค้นพบ
+        if (state.selectedProvince != null) ...[
+          Card(
+            color: Colors.green.shade50,
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✓ พบที่อยู่',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    )
+                  ),
+                  Divider(),
+                  _buildInfoRow('จังหวัด', state.selectedProvince!.nameTh),
+                  _buildInfoRow('อำเภอ', state.selectedDistrict?.nameTh),
+                  _buildInfoRow('ตำบล', state.selectedSubDistrict?.nameTh),
+                  _buildInfoRow('รหัสไปรษณีย์', state.zipCode),
+                ],
+              ),
+            ),
+          ),
+        ] else if (state.error != null) ...[
+          Card(
+            color: Colors.red.shade50,
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                '✗ ${state.error}',
+                style: TextStyle(color: Colors.red.shade700),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String? value) {
+    if (value == null) return SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(width: 100, child: Text('$label:')),
+          Expanded(child: Text(value, style: TextStyle(fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
+  }
+}
+```
+
+#### Handle Multiple Sub-districts
+
+บางรหัสไปรษณีย์มีหลายตำบล:
+
+```dart
+TextField(
+  decoration: InputDecoration(labelText: 'รหัสไปรษณีย์'),
+  onChanged: (zipCode) {
+    final repository = ref.read(thaiAddressRepositoryProvider);
+    final notifier = ref.read(thaiAddressNotifierProvider.notifier);
+    final subDistricts = repository.getSubDistrictsByZipCode(zipCode);
+
+    if (subDistricts.length > 1) {
+      // แสดง dialog ให้เลือก
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('พบหลายตำบล กรุณาเลือก'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: subDistricts.map((sub) {
+              final district = repository.getDistrictById(sub.districtId);
+              return ListTile(
+                title: Text(sub.nameTh),
+                subtitle: Text('${district?.nameTh}'),
+                onTap: () {
+                  notifier.selectSubDistrict(sub);
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        ),
+      );
+    } else {
+      // เฉพาะตำบลเดียว หรือไม่พบ
+      notifier.setZipCode(zipCode);
+    }
+  },
+)
+```
+
+### �📊 Data Models
 
 #### ThaiAddress (Output Model)
 

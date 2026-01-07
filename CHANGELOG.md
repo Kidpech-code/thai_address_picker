@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-01-07
+
+### Added
+
+- ✨ **Zip Code Autocomplete Widget** - Real-time auto-suggestions while typing
+  - Prefix matching for accurate suggestions (รหัสที่เริ่มต้นด้วย...)
+  - Shows full address hierarchy: ZipCode → SubDistrict → District → Province
+  - Handles multiple areas with same zip code (e.g., 10200 has 3 areas)
+  - Auto-fills all fields when suggestion is selected
+  - High-performance O(k log k) algorithm with early exit optimization
+- 🔍 `searchZipCodes()` method in repository with smart filtering
+- 🎯 `selectZipCodeSuggestion()` in provider for auto-fill cascade
+- 📚 New example: `zip_code_autocomplete_example.dart` with full feature showcase
+- 📖 Comprehensive documentation: `ZIP_CODE_AUTOCOMPLETE.md`
+
+### Changed
+
+- 🔄 `ThaiAddressForm` now uses `ZipCodeAutocomplete` instead of plain TextField
+- ⚡ Improved zip code input UX with real-time suggestions
+- 🎨 Enhanced helper text: "ระบบจะแนะนำที่อยู่อัตโนมัติ"
+
+### Fixed
+
+- 🐛 Fixed issue with multiple subdistricts having same zip code
+- 🔧 Improved error state handling in zip code lookup
+- ✅ Clear selections properly when zip code has multiple areas
+
 ## [0.1.0] - 2025-10-15
 
 ### Added

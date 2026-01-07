@@ -14,6 +14,7 @@ export 'src/providers/thai_address_providers.dart';
 // Widgets
 export 'src/widgets/thai_address_form.dart';
 export 'src/widgets/thai_address_picker.dart';
+export 'src/widgets/zip_code_autocomplete.dart';
 
 // Re-export flutter_riverpod for convenience
 export 'package:flutter_riverpod/flutter_riverpod.dart';
