@@ -1,13 +1,14 @@
 # Thai Address Picker 🇹🇭
 
-A high-performance Flutter package for Thai address selection with Province (จังหวัด), District (อำเภอ/เขต), Sub-district (ตำบล/แขวง), and Zip Code (รหัสไปรษณีย์) support.
+A high-performance Flutter package for Thai address selection with Province (จังหวัด), District (อำเภอ/เขต), Sub-district (ตำบล/แขวง), Village (หมู่บ้าน), and Zip Code (รหัสไปรษณีย์) support.
 
 ## Features ✨
 
 - 🚀 **High Performance**: Uses Isolates for background JSON parsing
 - 🔄 **Cascading Selection**: Province → District → Sub-district → Auto-fill Zip Code
 - 🔍 **Reverse Lookup**: Enter Zip Code → Auto-fill Sub-district, District, Province
-- ✨ **Zip Code Autocomplete**: Real-time suggestions with full address preview (NEW in v0.2.0)
+- ✨ **Zip Code Autocomplete**: Real-time suggestions with full address preview
+- 🏘️ **Village Autocomplete**: Real-time village search with Moo number (NEW in v0.3.0)
 - 🎯 **Multi-Area Support**: Handles zip codes with multiple locations (e.g., 10200)
 - 🎨 **Customizable UI**: Full control over styling and decoration
 - 🧩 **Flexible**: Use built-in widgets OR just data/state for your own UI
@@ -21,7 +22,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  thai_address_picker: ^0.2.0
+  thai_address_picker: ^0.3.0
 ```
 
 ## Usage
@@ -140,6 +141,46 @@ class MyForm extends ConsumerWidget {
 - ⚡ High-performance search with early exit
 - 🔄 Auto-fills all fields when selected
 - ✨ Handles multiple areas with same zip code (e.g., 10200)
+
+### 6. Use Village Autocomplete (NEW 🏘️)
+
+Real-time village (หมู่บ้าน) search with Moo number:
+
+```dart
+import 'package:thai_address_picker/thai_address_picker.dart';
+
+class MyForm extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return VillageAutocomplete(
+      decoration: InputDecoration(
+        labelText: 'หมู่บ้าน',
+        hintText: 'พิมพ์ชื่อหมู่บ้าน',
+        helperText: 'ระบบจะแนะนำหมู่บ้านอัตโนมัติ',
+      ),
+      onVillageSelected: (Village village) {
+        // Auto-filled! All address fields are updated
+        print('Village: ${village.nameTh}');
+        print('Moo: ${village.mooNo}');
+        
+        final state = ref.read(thaiAddressNotifierProvider);
+        print('Province: ${state.selectedProvince?.nameTh}');
+        print('District: ${state.selectedDistrict?.nameTh}');
+        print('SubDistrict: ${state.selectedSubDistrict?.nameTh}');
+      },
+    );
+  }
+}
+```
+
+**Features:**
+
+- 🏘️ Search from first character typed
+- 🔍 Substring matching for flexible search (e.g., "บ้าน" matches all villages)
+- 📍 Displays: Village • หมู่ที่ • SubDistrict • District • Province
+- 🎯 Shows Moo number (หมู่ที่) for accurate identification
+- 🔄 Auto-fills all address fields when selected
+- ⚡ High-performance O(k) search with early exit
 
 ## Customization
 

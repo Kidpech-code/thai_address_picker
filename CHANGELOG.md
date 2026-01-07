@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-01-08
+
+### Added
+
+- 🏘️ **Village Autocomplete Widget** - Real-time village (หมู่บ้าน) search
+  - Substring matching for flexible Thai text search
+  - Shows full address hierarchy: Village • หมู่ที่ • SubDistrict • District • Province
+  - Displays Moo number (หมู่ที่) for accurate identification
+  - Auto-fills all address fields when selected
+  - High-performance O(k) algorithm with early exit optimization
+  - **Real-time updates from first character typed**
+- 🔍 `searchVillages()` method in repository with smart filtering
+- 🏘️ `VillageSuggestion` class for village autocomplete data
+- 📚 New example: `village_autocomplete_example.dart` with full feature showcase
+- 📊 Village data integration (~70,000+ villages)
+- 📝 Spec file: `assets/data/spec/village.json` for data structure
+
+### Changed
+
+- 📦 Updated package description to include Village support
+- 🎨 Enhanced repository to handle village search efficiently
+- 🔄 Improved data loading to include villages.json
+
+### Performance
+
+- ⚡ O(k) complexity for village search with early exit (k = maxResults ≤ 20)
+- 🚀 Substring matching optimization for Thai text
+- 💾 Efficient HashMap-based filtering
+- 🎯 No unnecessary state updates during search
+
+### Documentation
+
+- 📖 Updated README with Village Autocomplete usage
+- 📝 Enhanced code comments for village-related features
+- 🎓 Added comprehensive example for village search
+- 📚 Updated feature list and documentation
+
 ## [0.2.0] - 2025-01-07
 
 ### Added

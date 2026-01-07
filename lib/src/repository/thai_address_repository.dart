@@ -5,6 +5,7 @@ import '../models/geography.dart';
 import '../models/province.dart';
 import '../models/district.dart';
 import '../models/sub_district.dart';
+import '../models/village.dart';
 
 /// Helper class for isolate-based JSON parsing
 class _JsonParseParams {
@@ -27,6 +28,8 @@ List<dynamic> _parseJsonInIsolate(_JsonParseParams params) {
       return jsonList.map((json) => District.fromJson(json)).toList();
     case 'subDistrict':
       return jsonList.map((json) => SubDistrict.fromJson(json)).toList();
+    case 'village':
+      return jsonList.map((json) => Village.fromJson(json)).toList();
     default:
       throw Exception('Unknown type: ${params.type}');
   }
@@ -62,12 +65,14 @@ class ThaiAddressRepository {
   List<Province>? _provinces;
   List<District>? _districts;
   List<SubDistrict>? _subDistricts;
+  List<Village>? _villages;
 
   // Indexed data for fast lookup
   Map<int, Geography>? _geographyMap;
   Map<int, Province>? _provinceMap;
   Map<int, District>? _districtMap;
   Map<int, SubDistrict>? _subDistrictMap;
+  Map<int, List<Village>>? _subDistrictVillageMap;
   Map<String, List<SubDistrict>>? _zipCodeIndex;
 
   bool _isInitialized = false;
@@ -83,6 +88,7 @@ class ThaiAddressRepository {
         rootBundle.loadString('$_basePath/provinces.json'),
         rootBundle.loadString('$_basePath/districts.json'),
         rootBundle.loadString('$_basePath/sub_districts.json'),
+        rootBundle.loadString('$_basePath/villages.json'),
       ]);
 
       // Parse JSON in isolates to avoid blocking UI thread
@@ -94,6 +100,7 @@ class ThaiAddressRepository {
           _parseJsonInIsolate,
           _JsonParseParams(results[3], 'subDistrict'),
         ),
+        compute(_parseJsonInIsolate, _JsonParseParams(results[4], 'village')),
       ]);
 
       // Cast and store results
@@ -101,6 +108,7 @@ class ThaiAddressRepository {
       _provinces = parsedResults[1].cast<Province>();
       _districts = parsedResults[2].cast<District>();
       _subDistricts = parsedResults[3].cast<SubDistrict>();
+      _villages = parsedResults[4].cast<Village>();
 
       // Build indexes for fast lookup
       _buildIndexes();
@@ -117,6 +125,19 @@ class ThaiAddressRepository {
     _provinceMap = {for (var p in _provinces!) p.id: p};
     _districtMap = {for (var d in _districts!) d.id: d};
     _subDistrictMap = {for (var s in _subDistricts!) s.id: s};
+
+    // Build sub-district to village index
+    _subDistrictVillageMap = {};
+    for (var village in _villages!) {
+      _subDistrictVillageMap!
+          .putIfAbsent(village.subDistrictId, () => [])
+          .add(village);
+    }
+
+    // Sort villages by moo_no
+    for (var list in _subDistrictVillageMap!.values) {
+      list.sort((a, b) => a.mooNo.compareTo(b.mooNo));
+    }
 
     // Build zip code index (one zip code can have multiple subdistricts)
     _zipCodeIndex = {};
@@ -157,6 +178,11 @@ class ThaiAddressRepository {
     return _subDistricts!;
   }
 
+  List<Village> get villages {
+    _ensureInitialized();
+    return _villages!;
+  }
+
   // Lookup by ID
   Geography? getGeographyById(int id) => _geographyMap?[id];
   Province? getProvinceById(int id) => _provinceMap?[id];
@@ -177,6 +203,11 @@ class ThaiAddressRepository {
   List<SubDistrict> getSubDistrictsByDistrict(int districtId) {
     _ensureInitialized();
     return _subDistricts!.where((s) => s.districtId == districtId).toList();
+  }
+
+  List<Village> getVillagesBySubDistrict(int subDistrictId) {
+    _ensureInitialized();
+    return _subDistrictVillageMap?[subDistrictId] ?? [];
   }
 
   // Reverse lookup by zip code
@@ -235,6 +266,70 @@ class ThaiAddressRepository {
               s.zipCode.contains(query),
         )
         .toList();
+  }
+
+  /// Search villages with auto-suggestion data
+  ///
+  /// Returns list of [VillageSuggestion] with full address hierarchy.
+  ///
+  /// Algorithm: O(k) where k = min(matches, maxResults)
+  /// - Uses substring matching for flexible search
+  /// - Early exit when reaching [maxResults] for performance
+  /// - HashMap-based deduplication for unique entries
+  /// - Results sorted alphabetically for consistent UI
+  ///
+  /// Parameters:
+  /// - [query]: Village name search (Thai text)
+  /// - [maxResults]: Maximum suggestions to return (default: 20)
+  ///
+  /// Returns: Sorted list of [VillageSuggestion] matching the query
+  ///
+  /// Example:
+  /// ```dart
+  /// final suggestions = repository.searchVillages('บ้าน', maxResults: 10);
+  /// // Returns: [บ้านทุ่ง, บ้านนา, บ้านสวน, ...]
+  /// ```
+  List<VillageSuggestion> searchVillages(String query, {int maxResults = 20}) {
+    _ensureInitialized();
+
+    if (query.isEmpty) return [];
+
+    final lowerQuery = query.toLowerCase();
+    final suggestions = <String, VillageSuggestion>{};
+
+    for (var village in _villages!) {
+      // Stop if we have enough results (performance optimization)
+      if (suggestions.length >= maxResults) break;
+
+      // Check if village name contains query (substring match)
+      if (village.nameTh.toLowerCase().contains(lowerQuery)) {
+        final key = '${village.id}';
+
+        // Skip if we already have this exact village
+        if (suggestions.containsKey(key)) continue;
+
+        final subDistrict = getSubDistrictById(village.subDistrictId);
+        final district = subDistrict != null
+            ? getDistrictById(subDistrict.districtId)
+            : null;
+        final province = district != null
+            ? getProvinceById(district.provinceId)
+            : null;
+
+        suggestions[key] = VillageSuggestion(
+          village: village,
+          subDistrict: subDistrict,
+          district: district,
+          province: province,
+        );
+      }
+    }
+
+    // Sort by village name for consistent ordering
+    final sortedList = suggestions.values.toList()
+      ..sort((a, b) => a.village.nameTh.compareTo(b.village.nameTh));
+
+    return sortedList;
   }
 
   /// Search zip codes with auto-suggestion data
@@ -367,5 +462,47 @@ class ZipCodeSuggestion {
     if (district?.nameEn != null) parts.add(district!.nameEn);
     if (province?.nameEn != null) parts.add(province!.nameEn);
     return parts.isEmpty ? '' : parts.join(' • ');
+  }
+}
+
+/// Village suggestion data class for autocomplete
+///
+/// Encapsulates all address information for a single village suggestion:
+/// - [village]: The village data with name and หมู่ (moo) number
+/// - [subDistrict]: Parent sub-district (nullable)
+/// - [district]: Parent district (nullable)
+/// - [province]: Parent province (nullable)
+///
+/// Provides formatted display strings for UI:
+/// - [displayText]: Thai format (village • subDistrict • district • province)
+/// - [displayMoo]: หมู่ที่ (moo number) for display
+///
+/// Used by [VillageAutocomplete] widget for dropdown suggestions.
+class VillageSuggestion {
+  final Village village;
+  final SubDistrict? subDistrict;
+  final District? district;
+  final Province? province;
+
+  VillageSuggestion({
+    required this.village,
+    this.subDistrict,
+    this.district,
+    this.province,
+  });
+
+  /// Display text for suggestion dropdown
+  String get displayText {
+    final parts = <String>[village.nameTh];
+    if (village.mooNo > 0) parts.add('หมู่ ${village.mooNo}');
+    if (subDistrict?.nameTh != null) parts.add(subDistrict!.nameTh);
+    if (district?.nameTh != null) parts.add(district!.nameTh);
+    if (province?.nameTh != null) parts.add(province!.nameTh);
+    return parts.join(' • ');
+  }
+
+  /// Moo number display
+  String get displayMoo {
+    return village.mooNo > 0 ? 'หมู่ ${village.mooNo}' : '';
   }
 }

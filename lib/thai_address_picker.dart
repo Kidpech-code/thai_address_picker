@@ -3,6 +3,7 @@ export 'src/models/geography.dart';
 export 'src/models/province.dart';
 export 'src/models/district.dart';
 export 'src/models/sub_district.dart';
+export 'src/models/village.dart';
 export 'src/models/thai_address.dart';
 
 // Repository
@@ -15,6 +16,7 @@ export 'src/providers/thai_address_providers.dart';
 export 'src/widgets/thai_address_form.dart';
 export 'src/widgets/thai_address_picker.dart';
 export 'src/widgets/zip_code_autocomplete.dart';
+export 'src/widgets/village_autocomplete.dart';
 
 // Re-export flutter_riverpod for convenience
 export 'package:flutter_riverpod/flutter_riverpod.dart';

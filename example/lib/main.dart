@@ -3,6 +3,7 @@ import 'package:thai_address_picker/thai_address_picker.dart';
 import 'custom_ui_example.dart';
 import 'zip_code_lookup_example.dart';
 import 'zip_code_autocomplete_example.dart';
+import 'village_autocomplete_example.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -102,6 +103,22 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
                           MaterialPageRoute(
                             builder: (context) =>
                                 const ZipCodeAutocompleteExample(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.home_work),
+                      title: const Text('Village Autocomplete 🏘️'),
+                      subtitle: const Text('ค้นหาหมู่บ้านแบบ real-time'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const VillageAutocompleteExample(),
                           ),
                         );
                       },

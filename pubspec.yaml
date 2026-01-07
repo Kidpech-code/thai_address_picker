@@ -1,6 +1,6 @@
 name: thai_address_picker
-description: "High-performance Thai address picker with Province, District, Subdistrict, Zip Code. Features auto-completion and reverse lookup."
-version: 0.2.0
+description: "High-performance Thai address picker with Province, District, Subdistrict, Village, Zip Code. Features auto-completion and reverse lookup."
+version: 0.3.0
 homepage: https://github.com/Kidpech-code/thai_address_picker
 
 environment:
@@ -28,3 +28,4 @@ flutter:
     - assets/data/raw/provinces.json
     - assets/data/raw/districts.json
     - assets/data/raw/sub_districts.json
+    - assets/data/raw/villages.json
