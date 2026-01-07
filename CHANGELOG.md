@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.0] - 2025-10-15
+
+### Added
+
+- 🚀 Released version 0.1.0 with minor improvements and bug fixe
+
+### Fixed
+
+- 🐛 Fixed minor bugs in address selection logic
+
 ## [0.0.1] - 2025-01-07
 
 ### Added

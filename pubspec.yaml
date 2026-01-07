@@ -1,6 +1,6 @@
 name: thai_address_picker
 description: "High-performance Thai address picker with Province, District, Subdistrict, Zip Code. Features auto-completion and reverse lookup."
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/Kidpech-code/thai_address_picker
 
 environment:
