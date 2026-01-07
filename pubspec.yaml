@@ -1,0 +1,30 @@
+name: thai_address_picker
+description: "A high-performance Flutter package for Thai address selection with Province, District, Subdistrict, and Zip Code support. Features auto-completion, reverse lookup, and Riverpod state management."
+version: 0.0.1
+homepage: https://github.com/Kidpech-code/thai_address_picker
+
+environment:
+  sdk: ^3.9.2
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+
+flutter:
+  assets:
+    - assets/data/raw/geographies.json
+    - assets/data/raw/provinces.json
+    - assets/data/raw/districts.json
+    - assets/data/raw/sub_districts.json
