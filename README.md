@@ -21,7 +21,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  thai_address_picker: ^0.0.1
+  thai_address_picker: ^0.2.0
 ```
 
 ## Usage
