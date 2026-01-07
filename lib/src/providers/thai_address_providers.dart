@@ -25,7 +25,14 @@ class ThaiAddressState {
   final bool isLoading;
   final String? error;
 
-  ThaiAddressState({this.selectedProvince, this.selectedDistrict, this.selectedSubDistrict, this.zipCode, this.isLoading = false, this.error});
+  ThaiAddressState({
+    this.selectedProvince,
+    this.selectedDistrict,
+    this.selectedSubDistrict,
+    this.zipCode,
+    this.isLoading = false,
+    this.error,
+  });
 
   ThaiAddressState copyWith({
     Province? selectedProvince,
@@ -40,9 +47,15 @@ class ThaiAddressState {
     bool clearZipCode = false,
   }) {
     return ThaiAddressState(
-      selectedProvince: clearProvince ? null : (selectedProvince ?? this.selectedProvince),
-      selectedDistrict: clearDistrict ? null : (selectedDistrict ?? this.selectedDistrict),
-      selectedSubDistrict: clearSubDistrict ? null : (selectedSubDistrict ?? this.selectedSubDistrict),
+      selectedProvince: clearProvince
+          ? null
+          : (selectedProvince ?? this.selectedProvince),
+      selectedDistrict: clearDistrict
+          ? null
+          : (selectedDistrict ?? this.selectedDistrict),
+      selectedSubDistrict: clearSubDistrict
+          ? null
+          : (selectedSubDistrict ?? this.selectedSubDistrict),
       zipCode: clearZipCode ? null : (zipCode ?? this.zipCode),
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
@@ -80,17 +93,29 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
 
   /// Select a province (cascading: clears district, subdistrict, and zip code)
   void selectProvince(Province? province) {
-    state = state.copyWith(selectedProvince: province, clearDistrict: true, clearSubDistrict: true, clearZipCode: true);
+    state = state.copyWith(
+      selectedProvince: province,
+      clearDistrict: true,
+      clearSubDistrict: true,
+      clearZipCode: true,
+    );
   }
 
   /// Select a district (cascading: clears subdistrict and zip code)
   void selectDistrict(District? district) {
-    state = state.copyWith(selectedDistrict: district, clearSubDistrict: true, clearZipCode: true);
+    state = state.copyWith(
+      selectedDistrict: district,
+      clearSubDistrict: true,
+      clearZipCode: true,
+    );
   }
 
   /// Select a subdistrict (auto-fills zip code)
   void selectSubDistrict(SubDistrict? subDistrict) {
-    state = state.copyWith(selectedSubDistrict: subDistrict, zipCode: subDistrict?.zipCode);
+    state = state.copyWith(
+      selectedSubDistrict: subDistrict,
+      zipCode: subDistrict?.zipCode,
+    );
   }
 
   /// Reverse lookup: Set zip code and auto-fill address if unique
@@ -109,7 +134,9 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
       // Unique zip code - auto-fill everything
       final subDistrict = subDistricts.first;
       final district = _repository.getDistrictById(subDistrict.districtId);
-      final province = district != null ? _repository.getProvinceById(district.provinceId) : null;
+      final province = district != null
+          ? _repository.getProvinceById(district.provinceId)
+          : null;
 
       state = ThaiAddressState(
         selectedProvince: province,
@@ -153,19 +180,26 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
 
   /// Search districts
   List<District> searchDistricts(String query) {
-    return _repository.searchDistricts(query, provinceId: state.selectedProvince?.id);
+    return _repository.searchDistricts(
+      query,
+      provinceId: state.selectedProvince?.id,
+    );
   }
 
   /// Search subdistricts
   List<SubDistrict> searchSubDistricts(String query) {
-    return _repository.searchSubDistricts(query, districtId: state.selectedDistrict?.id);
+    return _repository.searchSubDistricts(
+      query,
+      districtId: state.selectedDistrict?.id,
+    );
   }
 }
 
 /// Provider for the Thai address notifier
-final thaiAddressNotifierProvider = NotifierProvider<ThaiAddressNotifier, ThaiAddressState>(() {
-  return ThaiAddressNotifier();
-});
+final thaiAddressNotifierProvider =
+    NotifierProvider<ThaiAddressNotifier, ThaiAddressState>(() {
+      return ThaiAddressNotifier();
+    });
 
 /// Convenience providers for filtering data based on current selection
 final availableDistrictsProvider = Provider<List<District>>((ref) {

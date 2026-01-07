@@ -35,7 +35,8 @@ List<dynamic> _parseJsonInIsolate(_JsonParseParams params) {
 /// Repository for Thai address data with high-performance caching and isolate-based parsing
 class ThaiAddressRepository {
   // Singleton instance
-  static final ThaiAddressRepository _instance = ThaiAddressRepository._internal();
+  static final ThaiAddressRepository _instance =
+      ThaiAddressRepository._internal();
   factory ThaiAddressRepository() => _instance;
   ThaiAddressRepository._internal();
 
@@ -76,7 +77,10 @@ class ThaiAddressRepository {
         compute(_parseJsonInIsolate, _JsonParseParams(results[0], 'geography')),
         compute(_parseJsonInIsolate, _JsonParseParams(results[1], 'province')),
         compute(_parseJsonInIsolate, _JsonParseParams(results[2], 'district')),
-        compute(_parseJsonInIsolate, _JsonParseParams(results[3], 'subDistrict')),
+        compute(
+          _parseJsonInIsolate,
+          _JsonParseParams(results[3], 'subDistrict'),
+        ),
       ]);
 
       // Cast and store results
@@ -104,14 +108,18 @@ class ThaiAddressRepository {
     // Build zip code index (one zip code can have multiple subdistricts)
     _zipCodeIndex = {};
     for (var subDistrict in _subDistricts!) {
-      _zipCodeIndex!.putIfAbsent(subDistrict.zipCode, () => []).add(subDistrict);
+      _zipCodeIndex!
+          .putIfAbsent(subDistrict.zipCode, () => [])
+          .add(subDistrict);
     }
   }
 
   /// Ensure repository is initialized
   void _ensureInitialized() {
     if (!_isInitialized) {
-      throw StateError('ThaiAddressRepository is not initialized. Call initialize() first.');
+      throw StateError(
+        'ThaiAddressRepository is not initialized. Call initialize() first.',
+      );
     }
   }
 
@@ -170,36 +178,63 @@ class ThaiAddressRepository {
     if (query.isEmpty) return _provinces!;
 
     final lowerQuery = query.toLowerCase();
-    return _provinces!.where((p) => p.nameTh.toLowerCase().contains(lowerQuery) || p.nameEn.toLowerCase().contains(lowerQuery)).toList();
+    return _provinces!
+        .where(
+          (p) =>
+              p.nameTh.toLowerCase().contains(lowerQuery) ||
+              p.nameEn.toLowerCase().contains(lowerQuery),
+        )
+        .toList();
   }
 
   List<District> searchDistricts(String query, {int? provinceId}) {
     _ensureInitialized();
-    var results = provinceId != null ? getDistrictsByProvince(provinceId) : _districts!;
-
-    if (query.isEmpty) return results;
-
-    final lowerQuery = query.toLowerCase();
-    return results.where((d) => d.nameTh.toLowerCase().contains(lowerQuery) || d.nameEn.toLowerCase().contains(lowerQuery)).toList();
-  }
-
-  List<SubDistrict> searchSubDistricts(String query, {int? districtId}) {
-    _ensureInitialized();
-    var results = districtId != null ? getSubDistrictsByDistrict(districtId) : _subDistricts!;
+    var results = provinceId != null
+        ? getDistrictsByProvince(provinceId)
+        : _districts!;
 
     if (query.isEmpty) return results;
 
     final lowerQuery = query.toLowerCase();
     return results
-        .where((s) => s.nameTh.toLowerCase().contains(lowerQuery) || s.nameEn.toLowerCase().contains(lowerQuery) || s.zipCode.contains(query))
+        .where(
+          (d) =>
+              d.nameTh.toLowerCase().contains(lowerQuery) ||
+              d.nameEn.toLowerCase().contains(lowerQuery),
+        )
+        .toList();
+  }
+
+  List<SubDistrict> searchSubDistricts(String query, {int? districtId}) {
+    _ensureInitialized();
+    var results = districtId != null
+        ? getSubDistrictsByDistrict(districtId)
+        : _subDistricts!;
+
+    if (query.isEmpty) return results;
+
+    final lowerQuery = query.toLowerCase();
+    return results
+        .where(
+          (s) =>
+              s.nameTh.toLowerCase().contains(lowerQuery) ||
+              s.nameEn.toLowerCase().contains(lowerQuery) ||
+              s.zipCode.contains(query),
+        )
         .toList();
   }
 
   /// Get district and province info from subdistrict
   Map<String, dynamic> getFullAddressFromSubDistrict(SubDistrict subDistrict) {
     final district = getDistrictById(subDistrict.districtId);
-    final province = district != null ? getProvinceById(district.provinceId) : null;
+    final province = district != null
+        ? getProvinceById(district.provinceId)
+        : null;
 
-    return {'subDistrict': subDistrict, 'district': district, 'province': province};
+    return {
+      'subDistrict': subDistrict,
+      'district': district,
+      'province': province,
+    };
   }
 }

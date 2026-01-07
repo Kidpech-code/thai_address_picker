@@ -70,13 +70,19 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
     // Set initial values if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialProvince != null) {
-        ref.read(thaiAddressNotifierProvider.notifier).selectProvince(widget.initialProvince);
+        ref
+            .read(thaiAddressNotifierProvider.notifier)
+            .selectProvince(widget.initialProvince);
       }
       if (widget.initialDistrict != null) {
-        ref.read(thaiAddressNotifierProvider.notifier).selectDistrict(widget.initialDistrict);
+        ref
+            .read(thaiAddressNotifierProvider.notifier)
+            .selectDistrict(widget.initialDistrict);
       }
       if (widget.initialSubDistrict != null) {
-        ref.read(thaiAddressNotifierProvider.notifier).selectSubDistrict(widget.initialSubDistrict);
+        ref
+            .read(thaiAddressNotifierProvider.notifier)
+            .selectSubDistrict(widget.initialSubDistrict);
         _zipCodeController.text = widget.initialSubDistrict!.zipCode;
       }
     });
@@ -100,7 +106,8 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
 
     return initAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error loading data: $error')),
+      error: (error, stack) =>
+          Center(child: Text('Error loading data: $error')),
       data: (_) => _buildForm(),
     );
   }
@@ -127,13 +134,20 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
         DropdownButtonFormField<Province>(
           value: state.selectedProvince,
           decoration:
-              widget.provinceDecoration ?? InputDecoration(labelText: widget.useThai ? 'จังหวัด' : 'Province', border: const OutlineInputBorder()),
+              widget.provinceDecoration ??
+              InputDecoration(
+                labelText: widget.useThai ? 'จังหวัด' : 'Province',
+                border: const OutlineInputBorder(),
+              ),
           style: widget.textStyle,
           isExpanded: true,
           items: provinces.map((province) {
             return DropdownMenuItem(
               value: province,
-              child: Text(widget.useThai ? province.nameTh : province.nameEn, overflow: TextOverflow.ellipsis),
+              child: Text(
+                widget.useThai ? province.nameTh : province.nameEn,
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: widget.enabled
@@ -150,13 +164,20 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
         DropdownButtonFormField<District>(
           value: state.selectedDistrict,
           decoration:
-              widget.districtDecoration ?? InputDecoration(labelText: widget.useThai ? 'อำเภอ/เขต' : 'District', border: const OutlineInputBorder()),
+              widget.districtDecoration ??
+              InputDecoration(
+                labelText: widget.useThai ? 'อำเภอ/เขต' : 'District',
+                border: const OutlineInputBorder(),
+              ),
           style: widget.textStyle,
           isExpanded: true,
           items: districts.map((district) {
             return DropdownMenuItem(
               value: district,
-              child: Text(widget.useThai ? district.nameTh : district.nameEn, overflow: TextOverflow.ellipsis),
+              child: Text(
+                widget.useThai ? district.nameTh : district.nameEn,
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: widget.enabled && state.selectedProvince != null
@@ -174,13 +195,19 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           value: state.selectedSubDistrict,
           decoration:
               widget.subDistrictDecoration ??
-              InputDecoration(labelText: widget.useThai ? 'ตำบล/แขวง' : 'Sub-district', border: const OutlineInputBorder()),
+              InputDecoration(
+                labelText: widget.useThai ? 'ตำบล/แขวง' : 'Sub-district',
+                border: const OutlineInputBorder(),
+              ),
           style: widget.textStyle,
           isExpanded: true,
           items: subDistricts.map((subDistrict) {
             return DropdownMenuItem(
               value: subDistrict,
-              child: Text(widget.useThai ? subDistrict.nameTh : subDistrict.nameEn, overflow: TextOverflow.ellipsis),
+              child: Text(
+                widget.useThai ? subDistrict.nameTh : subDistrict.nameEn,
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: widget.enabled && state.selectedDistrict != null
@@ -197,7 +224,11 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           controller: _zipCodeController,
           decoration:
               widget.zipCodeDecoration ??
-              InputDecoration(labelText: widget.useThai ? 'รหัสไปรษณีย์' : 'Zip Code', border: const OutlineInputBorder(), errorText: state.error),
+              InputDecoration(
+                labelText: widget.useThai ? 'รหัสไปรษณีย์' : 'Zip Code',
+                border: const OutlineInputBorder(),
+                errorText: state.error,
+              ),
           style: widget.textStyle,
           keyboardType: TextInputType.number,
           maxLength: 5,

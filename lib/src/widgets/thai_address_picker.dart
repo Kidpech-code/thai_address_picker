@@ -21,7 +21,9 @@ class ThaiAddressPicker {
       isScrollControlled: true,
       isDismissible: isDismissible,
       enableDrag: enableDrag,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => _PickerContent(
         initialAddress: initialAddress,
         useThai: useThai,
@@ -53,7 +55,9 @@ class ThaiAddressPicker {
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: _PickerContent(
             initialAddress: initialAddress,
             useThai: useThai,
@@ -102,7 +106,9 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
 
     return Container(
       height: widget.isDialog ? null : contentHeight,
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: widget.isDialog ? MainAxisSize.min : MainAxisSize.max,
         children: [
@@ -110,17 +116,24 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+              border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor),
+              ),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     widget.useThai ? 'เลือกที่อยู่' : 'Select Address',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.close), onPressed: widget.onCancel),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: widget.onCancel,
+                ),
               ],
             ),
           ),
@@ -142,14 +155,18 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+              border: Border(
+                top: BorderSide(color: Theme.of(context).dividerColor),
+              ),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     onPressed: widget.onCancel,
-                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                     child: Text(widget.useThai ? 'ยกเลิก' : 'Cancel'),
                   ),
                 ),
@@ -161,7 +178,9 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
                         widget.onConfirm(_currentAddress!);
                       }
                     },
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                     child: Text(widget.useThai ? 'ยืนยัน' : 'Confirm'),
                   ),
                 ),
