@@ -33,6 +33,19 @@ List<dynamic> _parseJsonInIsolate(_JsonParseParams params) {
 }
 
 /// Repository for Thai address data with high-performance caching and isolate-based parsing
+///
+/// This singleton repository provides:
+/// - Lazy initialization with isolate-based JSON parsing for non-blocking UI
+/// - In-memory caching with O(1) lookup via HashMap indexes
+/// - Efficient search with early exit optimization
+/// - Thread-safe singleton pattern
+///
+/// Usage:
+/// ```dart
+/// final repository = ThaiAddressRepository();
+/// await repository.initialize();
+/// final provinces = repository.provinces;
+/// ```
 class ThaiAddressRepository {
   // Singleton instance
   static final ThaiAddressRepository _instance =
@@ -225,9 +238,26 @@ class ThaiAddressRepository {
   }
 
   /// Search zip codes with auto-suggestion data
-  /// Returns list of zip code suggestions with full address info
-  /// Algorithm: O(n) scan with early exit after maxResults
-  /// For better performance, results are limited and include full address context
+  ///
+  /// Returns list of [ZipCodeSuggestion] with full address hierarchy.
+  ///
+  /// Algorithm: O(k) where k = min(matches, maxResults)
+  /// - Uses prefix matching for accurate suggestions
+  /// - Early exit when reaching [maxResults] for performance
+  /// - HashMap-based deduplication for unique entries
+  /// - Results sorted by zip code for consistent UI
+  ///
+  /// Parameters:
+  /// - [query]: Partial or complete zip code (1-5 digits)
+  /// - [maxResults]: Maximum suggestions to return (default: 20)
+  ///
+  /// Returns: Sorted list of [ZipCodeSuggestion] matching the query
+  ///
+  /// Example:
+  /// ```dart
+  /// final suggestions = repository.searchZipCodes('102', maxResults: 10);
+  /// // Returns: [10200, 10210, 10220, ...]
+  /// ```
   List<ZipCodeSuggestion> searchZipCodes(String query, {int maxResults = 20}) {
     _ensureInitialized();
 
@@ -296,6 +326,18 @@ class ThaiAddressRepository {
 }
 
 /// Zip code suggestion data class for autocomplete
+///
+/// Encapsulates all address information for a single zip code suggestion:
+/// - [zipCode]: The 5-digit postal code
+/// - [subDistrict]: Associated sub-district data
+/// - [district]: Parent district (nullable)
+/// - [province]: Parent province (nullable)
+///
+/// Provides formatted display strings for UI:
+/// - [displayText]: Thai format (zipCode • subDistrict • district • province)
+/// - [displayTextEn]: English format (optional secondary text)
+///
+/// Used by [ZipCodeAutocomplete] widget for dropdown suggestions.
 class ZipCodeSuggestion {
   final String zipCode;
   final SubDistrict subDistrict;

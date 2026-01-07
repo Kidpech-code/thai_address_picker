@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
   - Handles multiple areas with same zip code (e.g., 10200 has 3 areas)
   - Auto-fills all fields when suggestion is selected
   - High-performance O(k log k) algorithm with early exit optimization
+  - **Real-time updates from first digit typed**
 - 🔍 `searchZipCodes()` method in repository with smart filtering
 - 🎯 `selectZipCodeSuggestion()` in provider for auto-fill cascade
 - 📚 New example: `zip_code_autocomplete_example.dart` with full feature showcase
@@ -20,14 +21,30 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - 🔄 `ThaiAddressForm` now uses `ZipCodeAutocomplete` instead of plain TextField
-- ⚡ Improved zip code input UX with real-time suggestions
+- ⚡ Improved zip code input UX with real-time suggestions from first digit
 - 🎨 Enhanced helper text: "ระบบจะแนะนำที่อยู่อัตโนมัติ"
+- 🚀 Optimized `setZipCode()` to handle partial input (< 5 digits) without errors
 
 ### Fixed
 
 - 🐛 Fixed issue with multiple subdistricts having same zip code
 - 🔧 Improved error state handling in zip code lookup
 - ✅ Clear selections properly when zip code has multiple areas
+- 🎯 Fixed autocomplete to show suggestions from first digit (not just 5 digits)
+
+### Performance
+
+- ⚡ O(k) complexity for zip code search with early exit (k = maxResults ≤ 20)
+- 🚀 Prefix matching optimization for real-time responsiveness
+- 💾 Efficient HashMap-based unique filtering
+- 🎯 No unnecessary state updates during partial input
+
+### Documentation
+
+- 📖 Updated README with Zip Code Autocomplete usage
+- 📝 Added comprehensive technical documentation
+- 🎓 Enhanced code comments for better maintainability
+- 📚 Added example showcasing all features
 
 ## [0.1.0] - 2025-10-15
 

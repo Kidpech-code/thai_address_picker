@@ -4,12 +4,33 @@ import '../repository/thai_address_repository.dart';
 import '../providers/thai_address_providers.dart';
 
 /// High-performance Zip Code Autocomplete Widget
+///
+/// Provides real-time autocomplete for Thai zip codes with:
+/// - **Instant suggestions** from first digit typed
+/// - **Prefix matching** for accurate results (e.g., "102" matches 10200, 10210)
+/// - **Full address preview** in dropdown (Zip • SubDistrict • District • Province)
+/// - **Multi-area handling** for zip codes with multiple locations
+/// - **Auto-fill cascade** when suggestion is selected
+///
+/// Performance:
+/// - O(k) search complexity where k = [maxSuggestions] (default: 20)
+/// - Early exit optimization for fast response
+/// - No blocking operations, runs on UI thread efficiently
+///
+/// Usage:
+/// ```dart
+/// ZipCodeAutocomplete(
+///   decoration: InputDecoration(labelText: 'Zip Code'),
+///   onZipCodeSelected: (zip) => print('Selected: $zip'),
+/// )
+/// ```
+///
 /// Features:
-/// - Real-time search with debouncing
+/// - Real-time search without debouncing (optimized for performance)
 /// - Prefix matching for accurate suggestions
 /// - Shows full address hierarchy (ZipCode → SubDistrict → District → Province)
 /// - Handles multiple areas with same zip code
-/// - O(n) search with early exit optimization
+/// - O(k) search with early exit optimization where k = maxSuggestions
 class ZipCodeAutocomplete extends ConsumerStatefulWidget {
   final TextEditingController? controller;
   final InputDecoration? decoration;

@@ -82,6 +82,18 @@ class ThaiAddressState {
 }
 
 /// Notifier for managing Thai address selection with cascading logic
+///
+/// Provides state management for address selection with:
+/// - Cascading updates (Province → District → SubDistrict → Zip)
+/// - Reverse lookup (Zip Code → auto-fill all fields)
+/// - Real-time validation and error handling
+/// - Search functionality for all address levels
+///
+/// Usage with Riverpod:
+/// ```dart
+/// final notifier = ref.read(thaiAddressNotifierProvider.notifier);
+/// notifier.selectProvince(province);
+/// ```
 class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   late final ThaiAddressRepository _repository;
 
@@ -119,6 +131,19 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   }
 
   /// Reverse lookup: Set zip code and auto-fill address if unique
+  ///
+  /// Handles three scenarios:
+  /// 1. **Empty input**: Clears all fields
+  /// 2. **Partial input (< 5 digits)**: Stores zip without error, allows autocomplete
+  /// 3. **Complete input (5 digits)**:
+  ///    - Single match → Auto-fills all fields
+  ///    - Multiple matches → Stores zip, user must select from suggestions
+  ///    - No match → Shows error message
+  ///
+  /// This supports real-time autocomplete from the first digit typed.
+  ///
+  /// Parameters:
+  /// - [zipCode]: User input (1-5 digits)
   void setZipCode(String zipCode) {
     if (zipCode.isEmpty) {
       state = state.copyWith(

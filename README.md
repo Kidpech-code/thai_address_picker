@@ -11,7 +11,7 @@ A high-performance Flutter package for Thai address selection with Province (จ
 - 🎯 **Multi-Area Support**: Handles zip codes with multiple locations (e.g., 10200)
 - 🎨 **Customizable UI**: Full control over styling and decoration
 - 🧩 **Flexible**: Use built-in widgets OR just data/state for your own UI
-- 📦 **State Management**: Built with Riverpod for clean architecture
+- 📦 **State Management**: Built with Riverpod for clean architecture 
 - 💾 **Caching**: Data loaded once and cached in memory
 - 🌐 **Bilingual**: Thai and English support
 
