@@ -4,6 +4,11 @@ import 'custom_ui_example.dart';
 import 'zip_code_lookup_example.dart';
 import 'zip_code_autocomplete_example.dart';
 import 'village_autocomplete_example.dart';
+// import 'provider_integration_example.dart';  // Commented out - requires provider package
+import 'repository_only_example.dart';
+// import 'getx_integration_example.dart';  // Commented out - requires get package
+import 'complete_integration_example.dart';
+import 'standalone_usage_example.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -55,10 +60,119 @@ class _ExampleHomePageState extends State<ExampleHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'More Examples',
+                      'State Management Integration Examples',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
+                    ListTile(
+                      leading: const Icon(Icons.rocket_launch),
+                      title: const Text('⭐ Standalone Usage'),
+                      subtitle: const Text(
+                        'Pure Repository - No State Management',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const StandaloneUsageExample(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.auto_awesome),
+                      title: const Text('Complete Integration'),
+                      subtitle: const Text('All features in one example'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const CompleteIntegrationExample(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.architecture),
+                      title: const Text('Provider Integration'),
+                      subtitle: const Text(
+                        'Scenario 3: ใช้กับ Provider package',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        // Provider example is commented out - requires provider package
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Provider example requires "provider" package. '
+                              'Add it to pubspec.yaml to use this example.',
+                            ),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) =>
+                        //         const ProviderIntegrationExample(),
+                        //   ),
+                        // );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.storage),
+                      title: const Text('Repository Only'),
+                      subtitle: const Text('Scenario 2: ไม่ต้อง ProviderScope'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RepositoryOnlyExample(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.widgets),
+                      title: const Text('GetX Integration'),
+                      subtitle: const Text('Scenario 3: ใช้กับ GetX'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        // GetX example is commented out - requires get package
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'GetX example requires "get" package. '
+                              'Add it to pubspec.yaml to use this example.',
+                            ),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) =>
+                        //         const GetXIntegrationExample(),
+                        //   ),
+                        // );
+                      },
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Feature Examples',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
                     ListTile(
                       leading: const Icon(Icons.edit_note),
                       title: const Text('Custom UI Example'),

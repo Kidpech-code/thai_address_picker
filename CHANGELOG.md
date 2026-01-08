@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2025-01-08
+
+### Added
+
+- 📚 Enhanced documentation with usage examples
+- ⚠️ Helpful error messages and warnings for optional dependencies (GetX, Provider)
+- 🛡️ Better error handling in example files
+
+### Fixed
+
+- 🐛 Fixed example code that called non-existent `getZipCodesBySubDistrict()` method
+  - Changed to use `subDistrict.zipCode` directly for accurate zip code retrieval
+  - Applied fixes to: `repository_only_example.dart`, `standalone_usage_example.dart`
+- 🔧 Resolved null type issues in cascading selection logic
+  - Fixed `firstWhere()` callbacks to properly handle null returns
+  - Applied to Province, District, and SubDistrict lookups
+- 📝 Fixed dangling doc comments in example files
+- ✅ All dart analyze issues resolved - zero issues found
+
+### Changed
+
+- 📦 Updated example files to properly handle optional dependencies
+  - GetX and Provider examples now clearly indicate they require additional setup
+  - Added helpful error messages in main menu when dependencies are missing
+- 🧹 Improved code organization in example implementations
+
+### Documentation
+
+- 📖 Updated README.md with version 1.0.1
+- 🎯 Clarified optional dependency requirements for integration examples
+
+---
+
 ## [1.0.0] - 2025-01-08
 
 ### Added
