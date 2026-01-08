@@ -5,6 +5,7 @@ export 'src/models/district.dart';
 export 'src/models/sub_district.dart';
 export 'src/models/village.dart';
 export 'src/models/thai_address.dart';
+export 'src/models/thai_address_labels.dart';
 
 // Repository
 export 'src/repository/thai_address_repository.dart';

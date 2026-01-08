@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repository/thai_address_repository.dart';
 import '../providers/thai_address_providers.dart';
+import '../models/thai_address_labels.dart';
 
 /// High-performance Zip Code Autocomplete Widget
 ///
@@ -37,6 +38,8 @@ class ZipCodeAutocomplete extends ConsumerStatefulWidget {
   final ValueChanged<String>? onZipCodeSelected;
   final int maxSuggestions;
   final bool enabled;
+  final bool useThai;
+  final ThaiAddressLabels? labels;
 
   const ZipCodeAutocomplete({
     super.key,
@@ -45,6 +48,8 @@ class ZipCodeAutocomplete extends ConsumerStatefulWidget {
     this.onZipCodeSelected,
     this.maxSuggestions = 20,
     this.enabled = true,
+    this.useThai = true,
+    this.labels,
   });
 
   @override
@@ -54,11 +59,13 @@ class ZipCodeAutocomplete extends ConsumerStatefulWidget {
 
 class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
   late TextEditingController _controller;
+  late FocusNode _focusNode;
   bool _isControllerInternal = false;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
     if (widget.controller == null) {
       _controller = TextEditingController();
       _isControllerInternal = true;
@@ -69,6 +76,7 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     if (_isControllerInternal) {
       _controller.dispose();
     }
@@ -79,7 +87,9 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
   Widget build(BuildContext context) {
     final notifier = ref.read(thaiAddressNotifierProvider.notifier);
 
-    return Autocomplete<ZipCodeSuggestion>(
+    return RawAutocomplete<ZipCodeSuggestion>(
+      focusNode: _focusNode,
+      textEditingController: _controller,
       optionsBuilder: (TextEditingValue textEditingValue) {
         final query = textEditingValue.text;
 
@@ -106,27 +116,11 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
             FocusNode focusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            // Sync with external controller
-            if (widget.controller != null) {
-              textEditingController.text = widget.controller!.text;
-              textEditingController.selection = widget.controller!.selection;
-
-              textEditingController.addListener(() {
-                if (widget.controller!.text != textEditingController.text) {
-                  widget.controller!.text = textEditingController.text;
-                  widget.controller!.selection =
-                      textEditingController.selection;
-                }
-              });
-
-              widget.controller!.addListener(() {
-                if (textEditingController.text != widget.controller!.text) {
-                  textEditingController.text = widget.controller!.text;
-                  textEditingController.selection =
-                      widget.controller!.selection;
-                }
-              });
-            }
+            final effectiveLabels =
+                widget.labels ??
+                (widget.useThai
+                    ? ThaiAddressLabels.thai
+                    : ThaiAddressLabels.english);
 
             return TextField(
               controller: textEditingController,
@@ -134,11 +128,13 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
               enabled: widget.enabled,
               decoration:
                   widget.decoration ??
-                  const InputDecoration(
-                    labelText: 'รหัสไปรษณีย์',
-                    hintText: 'กรอก 5 หลัก',
-                    helperText: 'ระบบจะแนะนำที่อยู่อัตโนมัติ',
-                    prefixIcon: Icon(Icons.local_post_office),
+                  InputDecoration(
+                    labelText: effectiveLabels.getZipCodeLabel(widget.useThai),
+                    hintText: effectiveLabels.getZipCodeHint(widget.useThai),
+                    helperText: effectiveLabels.getZipCodeHelper(
+                      widget.useThai,
+                    ),
+                    prefixIcon: const Icon(Icons.local_post_office),
                   ),
               keyboardType: TextInputType.number,
               maxLength: 5,

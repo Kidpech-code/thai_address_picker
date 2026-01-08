@@ -1,5 +1,7 @@
 # Thai Address Picker 🇹🇭
 
+![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
+
 A high-performance Flutter package for Thai address selection with Province (จังหวัด), District (อำเภอ/เขต), Sub-district (ตำบล/แขวง), Village (หมู่บ้าน), and Zip Code (รหัสไปรษณีย์) support.
 
 ## Features ✨
@@ -233,7 +235,9 @@ ThaiAddressForm(
 
 ### Use Data Only (Without UI Widgets)
 
-You can use only the data and state management without the built-in widgets to create your own custom UI:
+You can use only the data and state management without the built-in widgets to create your own custom UI. This is perfect for advanced customization or integration with other UI frameworks.
+
+#### 1. Basic Cascading Dropdowns
 
 ```dart
 import 'package:flutter/material.dart';
@@ -247,8 +251,8 @@ class CustomAddressForm extends ConsumerWidget {
     final initAsync = ref.watch(repositoryInitProvider);
 
     return initAsync.when(
-      loading: () => CircularProgressIndicator(),
-      error: (error, stack) => Text('Error: $error'),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
       data: (_) => _buildCustomForm(ref),
     );
   }
@@ -272,64 +276,617 @@ class CustomAddressForm extends ConsumerWidget {
         ? repository.getSubDistrictsByDistrict(state.selectedDistrict!.id)
         : <SubDistrict>[];
 
+    // Get zip codes by sub-district
+    final zipCodes = state.selectedSubDistrict != null
+        ? repository.getZipCodesBySubDistrict(state.selectedSubDistrict!.id)
+        : <String>[];
+
     return Column(
       children: [
-        // Your custom province dropdown
+        // Province dropdown
         DropdownButton<Province>(
           value: state.selectedProvince,
-          hint: Text('เลือกจังหวัด'),
+          hint: const Text('เลือกจังหวัด'),
+          isExpanded: true,
           items: provinces.map((p) => DropdownMenuItem(
             value: p,
             child: Text(p.nameTh),
           )).toList(),
           onChanged: (province) {
-            notifier.selectProvince(province);
+            if (province != null) {
+              notifier.selectProvince(province);
+            }
           },
         ),
 
-        // Your custom district dropdown
+        const SizedBox(height: 12),
+
+        // District dropdown
         DropdownButton<District>(
           value: state.selectedDistrict,
-          hint: Text('เลือกอำเภอ'),
+          hint: const Text('เลือกอำเภอ'),
+          isExpanded: true,
           items: districts.map((d) => DropdownMenuItem(
             value: d,
             child: Text(d.nameTh),
           )).toList(),
           onChanged: (district) {
-            notifier.selectDistrict(district);
+            if (district != null) {
+              notifier.selectDistrict(district);
+            }
           },
         ),
 
-        // Your custom sub-district dropdown
+        const SizedBox(height: 12),
+
+        // Sub-district dropdown
         DropdownButton<SubDistrict>(
           value: state.selectedSubDistrict,
-          hint: Text('เลือกตำบล'),
+          hint: const Text('เลือกตำบล'),
+          isExpanded: true,
           items: subDistricts.map((s) => DropdownMenuItem(
             value: s,
             child: Text(s.nameTh),
           )).toList(),
           onChanged: (subDistrict) {
-            notifier.selectSubDistrict(subDistrict);
+            if (subDistrict != null) {
+              notifier.selectSubDistrict(subDistrict);
+            }
           },
         ),
 
-        // Your custom zip code field
+        const SizedBox(height: 12),
+
+        // Zip code field
         TextField(
-          decoration: InputDecoration(labelText: 'รหัสไปรษณีย์'),
+          decoration: const InputDecoration(
+            labelText: 'รหัสไปรษณีย์',
+            hintText: 'เช่น 10110',
+          ),
           controller: TextEditingController(text: state.zipCode ?? ''),
           onChanged: (value) {
             notifier.setZipCode(value);
           },
         ),
 
+        const SizedBox(height: 12),
+
         // Display selected address
         if (state.selectedProvince != null)
-          Text('Address: ${state.toThaiAddress().provinceTh}'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('ที่อยู่ที่เลือก:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('จังหวัด: ${state.selectedProvince!.nameTh}'),
+                  if (state.selectedDistrict != null)
+                    Text('อำเภอ: ${state.selectedDistrict!.nameTh}'),
+                  if (state.selectedSubDistrict != null)
+                    Text('ตำบล: ${state.selectedSubDistrict!.nameTh}'),
+                  if (state.zipCode != null)
+                    Text('รหัสไปรษณีย์: ${state.zipCode}'),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 ```
+
+#### 2. Advanced: Custom Search with Providers
+
+Combine repository data with custom providers for complex filtering:
+
+```dart
+// Create a custom search provider
+final searchResultsProvider = StateNotifierProvider<SearchNotifier, List<SubDistrict>>((ref) {
+  return SearchNotifier(ref.watch(thaiAddressRepositoryProvider));
+});
+
+class SearchNotifier extends StateNotifier<List<SubDistrict>> {
+  final ThaiAddressRepository repository;
+
+  SearchNotifier(this.repository) : super([]);
+
+  void search(String query) {
+    if (query.isEmpty) {
+      state = [];
+      return;
+    }
+
+    // Search across all sub-districts
+    final results = repository.provinces
+        .expand((p) => repository.getDistrictsByProvince(p.id))
+        .expand((d) => repository.getSubDistrictsByDistrict(d.id))
+        .where((s) => s.nameTh.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+
+    state = results;
+  }
+}
+
+class SearchWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final results = ref.watch(searchResultsProvider);
+    final notifier = ref.read(searchResultsProvider.notifier);
+    final addressNotifier = ref.read(thaiAddressNotifierProvider.notifier);
+
+    return Column(
+      children: [
+        TextField(
+          decoration: const InputDecoration(
+            labelText: 'ค้นหาตำบล',
+            hintText: 'พิมพ์ชื่อตำบล',
+          ),
+          onChanged: (query) {
+            notifier.search(query);
+          },
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: results.length,
+            itemBuilder: (context, index) {
+              final subDistrict = results[index];
+              return ListTile(
+                title: Text(subDistrict.nameTh),
+                subtitle: Text('ID: ${subDistrict.id}'),
+                onTap: () {
+                  addressNotifier.selectSubDistrict(subDistrict);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+```
+
+#### 3. Village Data Access Without Widgets
+
+Get and search village data directly from repository:
+
+```dart
+class VillageDataAccessWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repository = ref.watch(thaiAddressRepositoryProvider);
+
+    // Get all villages (this loads ~70,000 villages)
+    final allVillages = repository.villages;
+    print('Total villages: ${allVillages.length}');
+
+    // Search villages by name
+    final searchResults = repository.searchVillages('บ้าน', maxResults: 20);
+    print('Search results for "บ้าน": ${searchResults.length} found');
+
+    // Get villages in a specific sub-district
+    final subDistrictId = 1;
+    final villagesInSubDistrict = repository.getVillagesBySubDistrict(subDistrictId);
+    print('Villages in sub-district $subDistrictId: ${villagesInSubDistrict.length}');
+
+    // Build custom list of village results
+    return ListView.builder(
+      itemCount: searchResults.length,
+      itemBuilder: (context, index) {
+        final villageResult = searchResults[index];
+        final village = villageResult.village;
+        final subDistrict = villageResult.subDistrict;
+        final district = villageResult.district;
+        final province = villageResult.province;
+
+        return Card(
+          child: ListTile(
+            title: Text(village.nameTh),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('หมู่ที่ ${village.mooNo}'),
+                Text('$subDistrictName $districtName $provinceName'),
+              ],
+            ),
+            trailing: Text('ID: ${village.id}'),
+          ),
+        );
+      },
+    );
+  }
+}
+```
+
+**Repository Methods for Villages:**
+
+```dart
+// Get all villages
+final allVillages = repository.villages;
+
+// Search villages with substring matching
+final results = repository.searchVillages('ชื่อหมู่บ้าน', maxResults: 20);
+
+// Get villages by sub-district ID
+final villagesBySubDistrict = repository.getVillagesBySubDistrict(subDistrictId);
+
+// Get village by ID
+final village = repository.getVillageById(villageId);
+```
+
+**VillageSuggestion Object Structure:**
+
+```dart
+class VillageSuggestion {
+  final Village village;           // Village data with id, nameTh, mooNo
+  final SubDistrict subDistrict;   // Parent sub-district
+  final District district;         // Parent district
+  final Province province;         // Parent province
+  final String displayText;        // "หมู่บ้านชื่อ • หมู่ที่X"
+  final String displayMoo;         // "หมู่ที่X"
+}
+```
+
+#### 4. Village Search with Provider State
+
+Create reactive village search with state management:
+
+```dart
+// Custom provider for village search results
+final villageSearchProvider = StateNotifierProvider<VillageSearchNotifier, List<VillageSuggestion>>((ref) {
+  final repository = ref.watch(thaiAddressRepositoryProvider);
+  return VillageSearchNotifier(repository);
+});
+
+class VillageSearchNotifier extends StateNotifier<List<VillageSuggestion>> {
+  final ThaiAddressRepository repository;
+
+  VillageSearchNotifier(this.repository) : super([]);
+
+  void search(String query, {int maxResults = 20}) {
+    if (query.isEmpty) {
+      state = [];
+      return;
+    }
+
+    final results = repository.searchVillages(query, maxResults: maxResults);
+    state = results;
+  }
+
+  void clear() {
+    state = [];
+  }
+}
+
+// Use in widget
+class VillageSearchReactiveWidget extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<VillageSearchReactiveWidget> createState() => _VillageSearchReactiveWidgetState();
+}
+
+class _VillageSearchReactiveWidgetState extends ConsumerState<VillageSearchReactiveWidget> {
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final searchResults = ref.watch(villageSearchProvider);
+    final searchNotifier = ref.read(villageSearchProvider.notifier);
+    final addressNotifier = ref.read(thaiAddressNotifierProvider.notifier);
+
+    return Column(
+      children: [
+        // Search input
+        TextField(
+          controller: _searchController,
+          decoration: const InputDecoration(
+            labelText: 'ค้นหาหมู่บ้าน',
+            hintText: 'พิมพ์ชื่อหมู่บ้าน',
+            prefixIcon: Icon(Icons.search),
+            suffixIcon: Icon(Icons.location_on_outlined),
+          ),
+          onChanged: (query) {
+            searchNotifier.search(query, maxResults: 15);
+          },
+        ),
+
+        const SizedBox(height: 16),
+
+        // Results count
+        if (searchResults.isNotEmpty)
+          Text('พบ ${searchResults.length} หมู่บ้าน',
+              style: Theme.of(context).textTheme.bodySmall),
+
+        const SizedBox(height: 8),
+
+        // Results list
+        Expanded(
+          child: searchResults.isEmpty
+              ? Center(
+                  child: Text(
+                    _searchController.text.isEmpty
+                        ? 'เริ่มพิมพ์เพื่อค้นหา'
+                        : 'ไม่พบหมู่บ้าน',
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: searchResults.length,
+                  itemBuilder: (context, index) {
+                    final result = searchResults[index];
+                    final village = result.village;
+
+                    return ListTile(
+                      leading: const Icon(Icons.home),
+                      title: Text(village.nameTh),
+                      subtitle: Text(
+                        '${result.displayMoo} • ${result.subDistrict.nameTh}',
+                      ),
+                      trailing: Text(
+                        result.district.nameTh,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onTap: () {
+                        // Auto-fill address fields
+                        addressNotifier.selectSubDistrict(result.subDistrict);
+                        _searchController.clear();
+                        searchNotifier.clear();
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+}
+```
+
+#### 4. Get All Data Programmatically
+
+Access complete data structures for custom implementation:
+
+```dart
+class DataAccessExample extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repository = ref.watch(thaiAddressRepositoryProvider);
+
+    // Get all provinces
+    final provinces = repository.provinces;
+    print('Total provinces: ${provinces.length}');
+
+    // Get all provinces with their districts count
+    final provincesWithCounts = provinces.map((p) {
+      final districts = repository.getDistrictsByProvince(p.id);
+      return {
+        'name': p.nameTh,
+        'districtCount': districts.length,
+      };
+    }).toList();
+
+    // Get specific data by ID
+    final province = repository.getProvinceById(1);
+    print('Province ID 1: ${province?.nameTh}');
+
+    // Get by geography (region)
+    final geographies = repository.geographies;
+    for (var geo in geographies) {
+      print('Region: ${geo.nameTh}');
+      final provincesByGeo = repository.getProvincesByGeography(geo.id);
+      print('Provinces in this region: ${provincesByGeo.length}');
+    }
+
+    // Search across data
+    final searchResults = repository.searchProvinces('กรุง');
+    print('Search results for "กรุง": ${searchResults.length} found');
+
+    return Center(
+      child: Text('Check console for data'),
+    );
+  }
+}
+```
+
+#### 5. Multi-level Filtering Example
+
+Build complex filtering logic:
+
+```dart
+class AdvancedFilterWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repository = ref.watch(thaiAddressRepositoryProvider);
+    final state = ref.watch(thaiAddressNotifierProvider);
+
+    // Get all available zip codes for current selection
+    final availableZipCodes = state.selectedSubDistrict != null
+        ? repository.getZipCodesBySubDistrict(state.selectedSubDistrict!.id)
+        : <String>[];
+
+    // Get all sub-districts for a province (skip district selection)
+    final allSubDistrictsInProvince = state.selectedProvince != null
+        ? repository.getDistrictsByProvince(state.selectedProvince!.id)
+            .expand((d) => repository.getSubDistrictsByDistrict(d.id))
+            .toList()
+        : <SubDistrict>[];
+
+    // Get districts with the most sub-districts
+    final districtsBySize = repository.provinces
+        .expand((p) => repository.getDistrictsByProvince(p.id))
+        .map((d) => {
+          'district': d,
+          'subDistrictCount': repository.getSubDistrictsByDistrict(d.id).length,
+        })
+        .toList()
+        ..sort((a, b) => (b['subDistrictCount'] as int).compareTo(a['subDistrictCount'] as int));
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Show all sub-districts in selected province
+          if (allSubDistrictsInProvince.isNotEmpty)
+            Column(
+              children: [
+                const Text('ตำบลทั้งหมดในจังหวัดนี้:'),
+                ...allSubDistrictsInProvince.map((s) => ListTile(
+                  title: Text(s.nameTh),
+                )),
+              ],
+            ),
+
+          const SizedBox(height: 20),
+
+          // Show available zip codes
+          if (availableZipCodes.isNotEmpty)
+            Column(
+              children: [
+                const Text('รหัสไปรษณีย์ที่มี:'),
+                ...availableZipCodes.map((z) => Chip(label: Text(z))),
+              ],
+            ),
+
+          const SizedBox(height: 20),
+
+          // Show top 5 largest districts
+          const Text('อำเภอที่มีตำบลมากที่สุด:'),
+          ...districtsBySize.take(5).map((item) {
+            final district = item['district'] as District;
+            final count = item['subDistrictCount'] as int;
+            return ListTile(
+              title: Text(district.nameTh),
+              trailing: Text('$count ตำบล'),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+```
+
+#### 6. Form Integration with State Persistence
+
+Combine data access with form state management:
+
+```dart
+class PersistentAddressForm extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<PersistentAddressForm> createState() => _PersistentAddressFormState();
+}
+
+class _PersistentAddressFormState extends ConsumerState<PersistentAddressForm> {
+  late TextEditingController _provinceController;
+  late TextEditingController _districtController;
+
+  @override
+  void initState() {
+    super.initState();
+    _provinceController = TextEditingController();
+    _districtController = TextEditingController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repository = ref.watch(thaiAddressRepositoryProvider);
+    final state = ref.watch(thaiAddressNotifierProvider);
+    final notifier = ref.read(thaiAddressNotifierProvider.notifier);
+
+    // Update controllers when state changes
+    _provinceController.text = state.selectedProvince?.nameTh ?? '';
+    _districtController.text = state.selectedDistrict?.nameTh ?? '';
+
+    return Column(
+      children: [
+        // Province input with autocomplete
+        Autocomplete<Province>(
+          optionsBuilder: (TextEditingValue value) {
+            if (value.text.isEmpty) {
+              return repository.provinces;
+            }
+            return repository.searchProvinces(value.text);
+          },
+          onSelected: (Province selection) {
+            _provinceController.text = selection.nameTh;
+            notifier.selectProvince(selection);
+          },
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            _provinceController = controller;
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: const InputDecoration(labelText: 'จังหวัด'),
+            );
+          },
+          displayStringForOption: (p) => p.nameTh,
+        ),
+
+        const SizedBox(height: 12),
+
+        // District input with filtered options
+        if (state.selectedProvince != null)
+          Autocomplete<District>(
+            optionsBuilder: (TextEditingValue value) {
+              final districts = repository.getDistrictsByProvince(
+                state.selectedProvince!.id,
+              );
+              if (value.text.isEmpty) {
+                return districts;
+              }
+              return districts.where((d) =>
+                  d.nameTh.toLowerCase().contains(value.text.toLowerCase())
+              );
+            },
+            onSelected: (District selection) {
+              _districtController.text = selection.nameTh;
+              notifier.selectDistrict(selection);
+            },
+            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+              _districtController = controller;
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(labelText: 'อำเภอ'),
+              );
+            },
+            displayStringForOption: (d) => d.nameTh,
+          ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _provinceController.dispose();
+    _districtController.dispose();
+    super.dispose();
+  }
+}
+```
+
+#### Key Benefits:
+
+- ✅ **Full Control**: Create any UI design you want
+- ✅ **Direct Data Access**: Get data without widget overhead
+- ✅ **Custom Logic**: Implement complex filtering and searching
+- ✅ **Flexibility**: Mix and match UI frameworks
+- ✅ **Performance**: Optimize queries for your specific use case
+- ✅ **State Integration**: Leverage Riverpod for reactive updates
+
+````
 
 ### Reverse Lookup: Zip Code → Auto-fill Address
 
@@ -407,7 +964,7 @@ class _ZipCodeLookupWidgetState extends ConsumerState<ZipCodeLookupWidget> {
     super.dispose();
   }
 }
-```
+````
 
 ### Handle Multiple Sub-districts with Same Zip Code
 

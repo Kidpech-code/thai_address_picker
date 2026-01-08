@@ -19,12 +19,12 @@ class SubDistrict with _$SubDistrict {
     final zipCode = json['zip_code'];
     return SubDistrict(
       id: json['id'] as int,
-      zipCode: zipCode is int ? zipCode.toString() : zipCode as String,
+      zipCode: zipCode?.toString() ?? '',
       nameTh: json['name_th'] as String,
       nameEn: json['name_en'] as String,
       districtId: json['district_id'] as int,
-      lat: json['lat'] as double?,
-      long: json['long'] as double?,
+      lat: (json['lat'] as num?)?.toDouble(),
+      long: (json['long'] as num?)?.toDouble(),
     );
   }
 }

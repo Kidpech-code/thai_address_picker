@@ -4,6 +4,7 @@ import '../models/thai_address.dart';
 import '../models/province.dart';
 import '../models/district.dart';
 import '../models/sub_district.dart';
+import '../models/thai_address_labels.dart';
 import '../providers/thai_address_providers.dart';
 import 'zip_code_autocomplete.dart';
 
@@ -42,6 +43,9 @@ class ThaiAddressForm extends ConsumerStatefulWidget {
   /// Show labels in Thai or English
   final bool useThai;
 
+  /// Custom labels for all fields (overrides useThai defaults)
+  final ThaiAddressLabels? labels;
+
   const ThaiAddressForm({
     super.key,
     this.onChanged,
@@ -55,6 +59,7 @@ class ThaiAddressForm extends ConsumerStatefulWidget {
     this.initialDistrict,
     this.initialSubDistrict,
     this.useThai = true,
+    this.labels,
   });
 
   @override
@@ -119,6 +124,9 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
     final provinces = notifier.getAllProvinces();
     final districts = notifier.getAvailableDistricts();
     final subDistricts = notifier.getAvailableSubDistricts();
+    final effectiveLabels =
+        widget.labels ??
+        (widget.useThai ? ThaiAddressLabels.thai : ThaiAddressLabels.english);
 
     // Update zip code controller when state changes
     if (state.zipCode != null && _zipCodeController.text != state.zipCode) {
@@ -137,7 +145,7 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           decoration:
               widget.provinceDecoration ??
               InputDecoration(
-                labelText: widget.useThai ? 'จังหวัด' : 'Province',
+                labelText: effectiveLabels.getProvinceLabel(widget.useThai),
                 border: const OutlineInputBorder(),
               ),
           style: widget.textStyle,
@@ -167,7 +175,7 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           decoration:
               widget.districtDecoration ??
               InputDecoration(
-                labelText: widget.useThai ? 'อำเภอ/เขต' : 'District',
+                labelText: effectiveLabels.getDistrictLabel(widget.useThai),
                 border: const OutlineInputBorder(),
               ),
           style: widget.textStyle,
@@ -197,7 +205,7 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           decoration:
               widget.subDistrictDecoration ??
               InputDecoration(
-                labelText: widget.useThai ? 'ตำบล/แขวง' : 'Sub-district',
+                labelText: effectiveLabels.getSubDistrictLabel(widget.useThai),
                 border: const OutlineInputBorder(),
               ),
           style: widget.textStyle,
@@ -226,11 +234,9 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           decoration:
               widget.zipCodeDecoration ??
               InputDecoration(
-                labelText: widget.useThai ? 'รหัสไปรษณีย์' : 'Zip Code',
-                hintText: widget.useThai ? 'กรอก 5 หลัก' : 'Enter 5 digits',
-                helperText: widget.useThai
-                    ? 'ระบบจะแนะนำที่อยู่อัตโนมัติ'
-                    : 'Auto-suggestions enabled',
+                labelText: effectiveLabels.getZipCodeLabel(widget.useThai),
+                hintText: effectiveLabels.getZipCodeHint(widget.useThai),
+                helperText: effectiveLabels.getZipCodeHelper(widget.useThai),
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.local_post_office),
                 errorText: state.error,

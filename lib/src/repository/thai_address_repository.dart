@@ -8,15 +8,17 @@ import '../models/sub_district.dart';
 import '../models/village.dart';
 
 /// Helper class for isolate-based JSON parsing
-class _JsonParseParams {
+@visibleForTesting
+class JsonParseParams {
   final String jsonString;
   final String type;
 
-  _JsonParseParams(this.jsonString, this.type);
+  JsonParseParams(this.jsonString, this.type);
 }
 
 /// Top-level function for isolate to parse JSON
-List<dynamic> _parseJsonInIsolate(_JsonParseParams params) {
+@visibleForTesting
+List<dynamic> parseJsonInIsolate(JsonParseParams params) {
   final List<dynamic> jsonList = jsonDecode(params.jsonString) as List;
 
   switch (params.type) {
@@ -77,30 +79,54 @@ class ThaiAddressRepository {
 
   bool _isInitialized = false;
 
+  /// Resets the repository state for testing purposes only
+  @visibleForTesting
+  void resetForTesting() {
+    _isInitialized = false;
+    _geographies = null;
+    _provinces = null;
+    _districts = null;
+    _subDistricts = null;
+    _villages = null;
+    _geographyMap = null;
+    _provinceMap = null;
+    _districtMap = null;
+    _subDistrictMap = null;
+    _subDistrictVillageMap = null;
+    _zipCodeIndex = null;
+  }
+
   /// Initialize the repository by loading and parsing all JSON files
-  Future<void> initialize() async {
+  Future<void> initialize({AssetBundle? bundle, bool useIsolate = true}) async {
     if (_isInitialized) return;
+
+    final targetBundle = bundle ?? rootBundle;
 
     try {
       // Load all JSON files in parallel
       final results = await Future.wait([
-        rootBundle.loadString('$_basePath/geographies.json'),
-        rootBundle.loadString('$_basePath/provinces.json'),
-        rootBundle.loadString('$_basePath/districts.json'),
-        rootBundle.loadString('$_basePath/sub_districts.json'),
-        rootBundle.loadString('$_basePath/villages.json'),
+        targetBundle.loadString('$_basePath/geographies.json'),
+        targetBundle.loadString('$_basePath/provinces.json'),
+        targetBundle.loadString('$_basePath/districts.json'),
+        targetBundle.loadString('$_basePath/sub_districts.json'),
+        targetBundle.loadString('$_basePath/villages.json'),
       ]);
 
-      // Parse JSON in isolates to avoid blocking UI thread
+      // Helper to parse or compute
+      Future<List<dynamic>> parse(String json, String type) {
+        final params = JsonParseParams(json, type);
+        return useIsolate
+            ? compute(parseJsonInIsolate, params)
+            : Future.value(parseJsonInIsolate(params));
+      }
+
+      // Parse JSON
       final parsedResults = await Future.wait([
-        compute(_parseJsonInIsolate, _JsonParseParams(results[0], 'geography')),
-        compute(_parseJsonInIsolate, _JsonParseParams(results[1], 'province')),
-        compute(_parseJsonInIsolate, _JsonParseParams(results[2], 'district')),
-        compute(
-          _parseJsonInIsolate,
-          _JsonParseParams(results[3], 'subDistrict'),
-        ),
-        compute(_parseJsonInIsolate, _JsonParseParams(results[4], 'village')),
+        parse(results[0], 'geography'),
+        parse(results[1], 'province'),
+        parse(results[2], 'district'),
+        parse(results[3], 'subDistrict'),
+        parse(results[4], 'village'),
       ]);
 
       // Cast and store results

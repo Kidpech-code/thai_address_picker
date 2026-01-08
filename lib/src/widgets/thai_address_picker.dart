@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/thai_address.dart';
+import '../models/thai_address_labels.dart';
 import 'thai_address_form.dart';
 
 /// A picker widget that shows Thai address form in a bottom sheet or dialog
@@ -10,6 +11,7 @@ class ThaiAddressPicker {
     required BuildContext context,
     ThaiAddress? initialAddress,
     bool useThai = true,
+    ThaiAddressLabels? labels,
     double? height,
     bool isDismissible = true,
     bool enableDrag = true,
@@ -27,6 +29,7 @@ class ThaiAddressPicker {
       builder: (context) => _PickerContent(
         initialAddress: initialAddress,
         useThai: useThai,
+        labels: labels,
         height: height,
         onConfirm: (address) {
           selectedAddress = address;
@@ -46,6 +49,7 @@ class ThaiAddressPicker {
     required BuildContext context,
     ThaiAddress? initialAddress,
     bool useThai = true,
+    ThaiAddressLabels? labels,
     bool barrierDismissible = true,
   }) async {
     return await showGeneralDialog<ThaiAddress>(
@@ -61,6 +65,7 @@ class ThaiAddressPicker {
           child: _PickerContent(
             initialAddress: initialAddress,
             useThai: useThai,
+            labels: labels,
             isDialog: true,
             onConfirm: (address) {
               Navigator.of(context).pop(address);
@@ -78,6 +83,7 @@ class ThaiAddressPicker {
 class _PickerContent extends ConsumerStatefulWidget {
   final ThaiAddress? initialAddress;
   final bool useThai;
+  final ThaiAddressLabels? labels;
   final double? height;
   final bool isDialog;
   final Function(ThaiAddress) onConfirm;
@@ -86,6 +92,7 @@ class _PickerContent extends ConsumerStatefulWidget {
   const _PickerContent({
     this.initialAddress,
     this.useThai = true,
+    this.labels,
     this.height,
     this.isDialog = false,
     required this.onConfirm,
@@ -103,6 +110,9 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final contentHeight = widget.height ?? screenHeight * 0.75;
+    final effectiveLabels =
+        widget.labels ??
+        (widget.useThai ? ThaiAddressLabels.thai : ThaiAddressLabels.english);
 
     return Container(
       height: widget.isDialog ? null : contentHeight,
@@ -124,7 +134,7 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.useThai ? 'เลือกที่อยู่' : 'Select Address',
+                    effectiveLabels.getPickerTitle(widget.useThai),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -144,6 +154,7 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
               padding: const EdgeInsets.all(16),
               child: ThaiAddressForm(
                 useThai: widget.useThai,
+                labels: widget.labels,
                 onChanged: (address) {
                   _currentAddress = address;
                 },
@@ -167,7 +178,9 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: Text(widget.useThai ? 'ยกเลิก' : 'Cancel'),
+                    child: Text(
+                      effectiveLabels.getCancelButton(widget.useThai),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -181,7 +194,9 @@ class _PickerContentState extends ConsumerState<_PickerContent> {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: Text(widget.useThai ? 'ยืนยัน' : 'Confirm'),
+                    child: Text(
+                      effectiveLabels.getConfirmButton(widget.useThai),
+                    ),
                   ),
                 ),
               ],

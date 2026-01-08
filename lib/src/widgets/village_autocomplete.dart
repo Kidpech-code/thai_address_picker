@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repository/thai_address_repository.dart';
 import '../providers/thai_address_providers.dart';
 import '../models/village.dart';
+import '../models/thai_address_labels.dart';
 
 /// High-performance Village Autocomplete Widget
 ///
@@ -38,6 +39,8 @@ class VillageAutocomplete extends ConsumerStatefulWidget {
   final ValueChanged<Village>? onVillageSelected;
   final int maxSuggestions;
   final bool enabled;
+  final bool useThai;
+  final ThaiAddressLabels? labels;
 
   const VillageAutocomplete({
     super.key,
@@ -46,6 +49,8 @@ class VillageAutocomplete extends ConsumerStatefulWidget {
     this.onVillageSelected,
     this.maxSuggestions = 20,
     this.enabled = true,
+    this.useThai = true,
+    this.labels,
   });
 
   @override
@@ -55,11 +60,13 @@ class VillageAutocomplete extends ConsumerStatefulWidget {
 
 class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
   late TextEditingController _controller;
+  late FocusNode _focusNode;
   bool _isControllerInternal = false;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
     if (widget.controller == null) {
       _controller = TextEditingController();
       _isControllerInternal = true;
@@ -70,6 +77,7 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     if (_isControllerInternal) {
       _controller.dispose();
     }
@@ -80,7 +88,9 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
   Widget build(BuildContext context) {
     final repository = ref.watch(thaiAddressRepositoryProvider);
 
-    return Autocomplete<VillageSuggestion>(
+    return RawAutocomplete<VillageSuggestion>(
+      focusNode: _focusNode,
+      textEditingController: _controller,
       optionsBuilder: (TextEditingValue textEditingValue) {
         final query = textEditingValue.text;
 
@@ -107,27 +117,11 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
             FocusNode focusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            // Sync with external controller
-            if (widget.controller != null) {
-              textEditingController.text = widget.controller!.text;
-              textEditingController.selection = widget.controller!.selection;
-
-              textEditingController.addListener(() {
-                if (widget.controller!.text != textEditingController.text) {
-                  widget.controller!.text = textEditingController.text;
-                  widget.controller!.selection =
-                      textEditingController.selection;
-                }
-              });
-
-              widget.controller!.addListener(() {
-                if (textEditingController.text != widget.controller!.text) {
-                  textEditingController.text = widget.controller!.text;
-                  textEditingController.selection =
-                      widget.controller!.selection;
-                }
-              });
-            }
+            final effectiveLabels =
+                widget.labels ??
+                (widget.useThai
+                    ? ThaiAddressLabels.thai
+                    : ThaiAddressLabels.english);
 
             return TextField(
               controller: textEditingController,
@@ -135,11 +129,13 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
               enabled: widget.enabled,
               decoration:
                   widget.decoration ??
-                  const InputDecoration(
-                    labelText: 'หมู่บ้าน',
-                    hintText: 'ค้นหาชื่อหมู่บ้าน',
-                    helperText: 'ระบบจะแนะนำหมู่บ้านอัตโนมัติ',
-                    prefixIcon: Icon(Icons.home),
+                  InputDecoration(
+                    labelText: effectiveLabels.getVillageLabel(widget.useThai),
+                    hintText: effectiveLabels.getVillageHint(widget.useThai),
+                    helperText: effectiveLabels.getVillageHelper(
+                      widget.useThai,
+                    ),
+                    prefixIcon: const Icon(Icons.home),
                   ),
               keyboardType: TextInputType.text,
             );

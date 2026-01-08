@@ -107,6 +107,7 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   void selectProvince(Province? province) {
     state = state.copyWith(
       selectedProvince: province,
+      clearProvince: province == null,
       clearDistrict: true,
       clearSubDistrict: true,
       clearZipCode: true,
@@ -117,6 +118,7 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   void selectDistrict(District? district) {
     state = state.copyWith(
       selectedDistrict: district,
+      clearDistrict: district == null,
       clearSubDistrict: true,
       clearZipCode: true,
     );
@@ -126,7 +128,9 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   void selectSubDistrict(SubDistrict? subDistrict) {
     state = state.copyWith(
       selectedSubDistrict: subDistrict,
+      clearSubDistrict: subDistrict == null,
       zipCode: subDistrict?.zipCode,
+      clearZipCode: subDistrict == null,
     );
   }
 
