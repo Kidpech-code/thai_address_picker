@@ -25,14 +25,7 @@ class ThaiAddressState {
   final bool isLoading;
   final String? error;
 
-  ThaiAddressState({
-    this.selectedProvince,
-    this.selectedDistrict,
-    this.selectedSubDistrict,
-    this.zipCode,
-    this.isLoading = false,
-    this.error,
-  });
+  ThaiAddressState({this.selectedProvince, this.selectedDistrict, this.selectedSubDistrict, this.zipCode, this.isLoading = false, this.error});
 
   ThaiAddressState copyWith({
     Province? selectedProvince,
@@ -47,15 +40,9 @@ class ThaiAddressState {
     bool clearZipCode = false,
   }) {
     return ThaiAddressState(
-      selectedProvince: clearProvince
-          ? null
-          : (selectedProvince ?? this.selectedProvince),
-      selectedDistrict: clearDistrict
-          ? null
-          : (selectedDistrict ?? this.selectedDistrict),
-      selectedSubDistrict: clearSubDistrict
-          ? null
-          : (selectedSubDistrict ?? this.selectedSubDistrict),
+      selectedProvince: clearProvince ? null : (selectedProvince ?? this.selectedProvince),
+      selectedDistrict: clearDistrict ? null : (selectedDistrict ?? this.selectedDistrict),
+      selectedSubDistrict: clearSubDistrict ? null : (selectedSubDistrict ?? this.selectedSubDistrict),
       zipCode: clearZipCode ? null : (zipCode ?? this.zipCode),
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
@@ -116,12 +103,7 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
 
   /// Select a district (cascading: clears subdistrict and zip code)
   void selectDistrict(District? district) {
-    state = state.copyWith(
-      selectedDistrict: district,
-      clearDistrict: district == null,
-      clearSubDistrict: true,
-      clearZipCode: true,
-    );
+    state = state.copyWith(selectedDistrict: district, clearDistrict: district == null, clearSubDistrict: true, clearZipCode: true);
   }
 
   /// Select a subdistrict (auto-fills zip code)
@@ -150,26 +132,14 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
   /// - [zipCode]: User input (1-5 digits)
   void setZipCode(String zipCode) {
     if (zipCode.isEmpty) {
-      state = state.copyWith(
-        clearZipCode: true,
-        clearSubDistrict: true,
-        clearDistrict: true,
-        clearProvince: true,
-        error: null,
-      );
+      state = state.copyWith(clearZipCode: true, clearSubDistrict: true, clearDistrict: true, clearProvince: true, error: null);
       return;
     }
 
     // For partial input (less than 5 digits), just store zip code without error
     // This allows autocomplete to work while typing
     if (zipCode.length < 5) {
-      state = state.copyWith(
-        zipCode: zipCode,
-        error: null,
-        clearSubDistrict: true,
-        clearDistrict: true,
-        clearProvince: true,
-      );
+      state = state.copyWith(zipCode: zipCode, error: null, clearSubDistrict: true, clearDistrict: true, clearProvince: true);
       return;
     }
 
@@ -178,20 +148,12 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
 
     if (subDistricts.isEmpty) {
       // Invalid zip code
-      state = state.copyWith(
-        zipCode: zipCode,
-        error: 'ไม่พบรหัสไปรษณีย์นี้',
-        clearSubDistrict: true,
-        clearDistrict: true,
-        clearProvince: true,
-      );
+      state = state.copyWith(zipCode: zipCode, error: 'ไม่พบรหัสไปรษณีย์นี้', clearSubDistrict: true, clearDistrict: true, clearProvince: true);
     } else if (subDistricts.length == 1) {
       // Unique zip code - auto-fill everything
       final subDistrict = subDistricts.first;
       final district = _repository.getDistrictById(subDistrict.districtId);
-      final province = district != null
-          ? _repository.getProvinceById(district.provinceId)
-          : null;
+      final province = district != null ? _repository.getProvinceById(district.provinceId) : null;
 
       state = ThaiAddressState(
         selectedProvince: province,
@@ -202,19 +164,18 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
       );
     } else {
       // Multiple subdistricts with same zip code - just set zip code
-      state = state.copyWith(
-        zipCode: zipCode,
-        error: null,
-        clearSubDistrict: true,
-        clearDistrict: true,
-        clearProvince: true,
-      );
+      state = state.copyWith(zipCode: zipCode, error: null, clearSubDistrict: true, clearDistrict: true, clearProvince: true);
     }
   }
 
   /// Reset all selections
   void reset() {
     state = ThaiAddressState();
+  }
+
+  /// Clear only zip code (used when showZipCodeAutocomplete is false)
+  void clearZipCode() {
+    state = state.copyWith(clearZipCode: true, error: null);
   }
 
   /// Get available districts for selected province
@@ -241,18 +202,12 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
 
   /// Search districts
   List<District> searchDistricts(String query) {
-    return _repository.searchDistricts(
-      query,
-      provinceId: state.selectedProvince?.id,
-    );
+    return _repository.searchDistricts(query, provinceId: state.selectedProvince?.id);
   }
 
   /// Search subdistricts
   List<SubDistrict> searchSubDistricts(String query) {
-    return _repository.searchSubDistricts(
-      query,
-      districtId: state.selectedDistrict?.id,
-    );
+    return _repository.searchSubDistricts(query, districtId: state.selectedDistrict?.id);
   }
 
   /// Search zip codes with suggestions
@@ -275,10 +230,9 @@ class ThaiAddressNotifier extends Notifier<ThaiAddressState> {
 }
 
 /// Provider for the Thai address notifier
-final thaiAddressNotifierProvider =
-    NotifierProvider<ThaiAddressNotifier, ThaiAddressState>(() {
-      return ThaiAddressNotifier();
-    });
+final thaiAddressNotifierProvider = NotifierProvider<ThaiAddressNotifier, ThaiAddressState>(() {
+  return ThaiAddressNotifier();
+});
 
 /// Convenience providers for filtering data based on current selection
 final availableDistrictsProvider = Provider<List<District>>((ref) {

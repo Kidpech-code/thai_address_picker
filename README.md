@@ -21,14 +21,16 @@ A high-performance Flutter package for Thai address selection with Province (จ
 ## Screenshots 📸
 
 <p align="center">
-  <img src="assets/images/screenshot_1.png" width="200" />
-  <img src="assets/images/screenshot_2.png" width="200" />
-  <img src="assets/images/screenshot_4.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_1.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_2.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_3.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_4.png" width="200" />
 </p>
 <p align="center">
-  <img src="assets/images/screenshot_5.png" width="200" />
-  <img src="assets/images/screenshot_6.png" width="200" />
-  <img src="assets/images/screenshot_7.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_5.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_6.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_7.png" width="200" />
+  <img src="https://raw.githubusercontent.com/Kidpech-code/thai_address_picker/main/assets/images/screenshot_8.png" width="200" />
 </p>
 
 ## Installation
@@ -37,7 +39,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  thai_address_picker: ^1.0.1
+  thai_address_picker: ^1.0.2
 ```
 
 ---
@@ -921,6 +923,42 @@ ThaiAddressForm(
   },
 )
 ```
+
+### Disable Zip Code Autocomplete
+
+You can disable zip code autocomplete suggestions and use a simple TextField instead:
+
+```dart
+ThaiAddressForm(
+  // Disable autocomplete for simpler UI
+  showZipCodeAutocomplete: false,
+  onChanged: (address) {
+    // Handle address change
+  },
+)
+```
+
+**Why disable autocomplete?**
+
+- ✅ Simpler UI when suggestions are not needed
+- ✅ Faster performance for basic input
+- ✅ Better for forms where users already know their zip code
+- ✅ Less visual clutter
+
+**Comparison:**
+
+| Feature                  | With Autocomplete (`true`) | Without Autocomplete (`false`) |
+| ------------------------ | -------------------------- | ------------------------------ |
+| Suggestions while typing | ✅ Yes                     | ❌ No                          |
+| Auto-fill address        | ✅ Yes                     | ❌ No                          |
+| Multi-area support       | ✅ Yes                     | ❌ No                          |
+| UI Complexity            | More features              | Simpler                        |
+| Performance              | Good                       | Better                         |
+
+**Examples:**
+
+- [`disable_zipcode_autocomplete_example.dart`](example/lib/disable_zipcode_autocomplete_example.dart) - Basic example with disabled autocomplete
+- [`compare_zipcode_modes_example.dart`](example/lib/compare_zipcode_modes_example.dart) - Side-by-side comparison
 
 ### Initial Values
 
@@ -2145,6 +2183,46 @@ List<SubDistrict> getSubDistrictsByZipCode(String zipCode);
 // Search (Early exit)
 List<Province> searchProvinces(String query);
 List<District> searchDistricts(String query);
+```
+
+---
+
+## Example Files
+
+All examples are available in the [`example/lib/`](example/lib/) directory:
+
+### Basic Usage
+
+- [`main.dart`](example/lib/main.dart) - Basic usage with ThaiAddressForm
+- [`complete_integration_example.dart`](example/lib/complete_integration_example.dart) - Complete integration example
+- [`standalone_usage_example.dart`](example/lib/standalone_usage_example.dart) - Standalone usage without Riverpod
+
+### Widget Examples
+
+- [`custom_ui_example.dart`](example/lib/custom_ui_example.dart) - Custom UI styling
+- [`repository_only_example.dart`](example/lib/repository_only_example.dart) - Repository-only usage
+
+### State Management Integration
+
+- [`provider_integration_example.dart`](example/lib/provider_integration_example.dart) - Provider integration
+- [`getx_integration_example.dart`](example/lib/getx_integration_example.dart) - GetX integration
+
+### Zip Code Features
+
+- [`zip_code_autocomplete_example.dart`](example/lib/zip_code_autocomplete_example.dart) - Zip code autocomplete with suggestions
+- [`zip_code_lookup_example.dart`](example/lib/zip_code_lookup_example.dart) - Reverse lookup by zip code
+- **[`disable_zipcode_autocomplete_example.dart`](example/lib/disable_zipcode_autocomplete_example.dart)** - ✨ Disable autocomplete for simpler UI
+- **[`compare_zipcode_modes_example.dart`](example/lib/compare_zipcode_modes_example.dart)** - ✨ Compare autocomplete vs simple TextField
+
+### Village Features
+
+- [`village_autocomplete_example.dart`](example/lib/village_autocomplete_example.dart) - Village autocomplete with Moo number
+
+To run examples:
+
+```bash
+cd example
+flutter run
 ```
 
 ---

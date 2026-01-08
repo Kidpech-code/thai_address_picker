@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2025-01-08
+
+### Added
+
+- ✨ **New Feature**: `showZipCodeAutocomplete` parameter in `ThaiAddressForm`
+  - Can now disable zip code autocomplete to show a simple TextField instead
+  - Default: `true` (autocomplete enabled)
+  - When `false`: Shows basic TextField without suggestions
+- 📚 **New Examples**:
+  - `disable_zipcode_autocomplete_example.dart` - Basic example with disabled autocomplete
+  - `compare_zipcode_modes_example.dart` - Side-by-side comparison of both modes
+- 🆕 `clearZipCode()` method in `ThaiAddressNotifier` for better state management
+
+### Changed
+
+- 📖 Updated README.md with:
+  - Documentation for disabling zip code autocomplete
+  - Comparison table of features (Autocomplete vs Simple)
+  - Links to new example files
+  - Complete Example Files section
+
+### Why This Update?
+
+- Some users don't need autocomplete suggestions
+- Simpler UI for cases where users already know their zip code
+- Better performance for basic input scenarios
+- More flexibility and customization options
+
+---
+
 ## [1.0.1] - 2025-01-08
 
 ### Added

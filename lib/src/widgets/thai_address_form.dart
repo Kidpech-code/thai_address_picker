@@ -46,6 +46,10 @@ class ThaiAddressForm extends ConsumerStatefulWidget {
   /// Custom labels for all fields (overrides useThai defaults)
   final ThaiAddressLabels? labels;
 
+  /// Show zip code autocomplete suggestions (default: true)
+  /// When false, shows a simple TextField for zip code input
+  final bool showZipCodeAutocomplete;
+
   const ThaiAddressForm({
     super.key,
     this.onChanged,
@@ -60,6 +64,7 @@ class ThaiAddressForm extends ConsumerStatefulWidget {
     this.initialSubDistrict,
     this.useThai = true,
     this.labels,
+    this.showZipCodeAutocomplete = true,
   });
 
   @override
@@ -76,19 +81,13 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
     // Set initial values if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialProvince != null) {
-        ref
-            .read(thaiAddressNotifierProvider.notifier)
-            .selectProvince(widget.initialProvince);
+        ref.read(thaiAddressNotifierProvider.notifier).selectProvince(widget.initialProvince);
       }
       if (widget.initialDistrict != null) {
-        ref
-            .read(thaiAddressNotifierProvider.notifier)
-            .selectDistrict(widget.initialDistrict);
+        ref.read(thaiAddressNotifierProvider.notifier).selectDistrict(widget.initialDistrict);
       }
       if (widget.initialSubDistrict != null) {
-        ref
-            .read(thaiAddressNotifierProvider.notifier)
-            .selectSubDistrict(widget.initialSubDistrict);
+        ref.read(thaiAddressNotifierProvider.notifier).selectSubDistrict(widget.initialSubDistrict);
         _zipCodeController.text = widget.initialSubDistrict!.zipCode;
       }
     });
@@ -112,8 +111,7 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
 
     return initAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          Center(child: Text('Error loading data: $error')),
+      error: (error, stack) => Center(child: Text('Error loading data: $error')),
       data: (_) => _buildForm(),
     );
   }
@@ -124,9 +122,7 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
     final provinces = notifier.getAllProvinces();
     final districts = notifier.getAvailableDistricts();
     final subDistricts = notifier.getAvailableSubDistricts();
-    final effectiveLabels =
-        widget.labels ??
-        (widget.useThai ? ThaiAddressLabels.thai : ThaiAddressLabels.english);
+    final effectiveLabels = widget.labels ?? (widget.useThai ? ThaiAddressLabels.thai : ThaiAddressLabels.english);
 
     // Update zip code controller when state changes
     if (state.zipCode != null && _zipCodeController.text != state.zipCode) {
@@ -144,19 +140,13 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           value: state.selectedProvince,
           decoration:
               widget.provinceDecoration ??
-              InputDecoration(
-                labelText: effectiveLabels.getProvinceLabel(widget.useThai),
-                border: const OutlineInputBorder(),
-              ),
+              InputDecoration(labelText: effectiveLabels.getProvinceLabel(widget.useThai), border: const OutlineInputBorder()),
           style: widget.textStyle,
           isExpanded: true,
           items: provinces.map((province) {
             return DropdownMenuItem(
               value: province,
-              child: Text(
-                widget.useThai ? province.nameTh : province.nameEn,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(widget.useThai ? province.nameTh : province.nameEn, overflow: TextOverflow.ellipsis),
             );
           }).toList(),
           onChanged: widget.enabled
@@ -174,19 +164,13 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           value: state.selectedDistrict,
           decoration:
               widget.districtDecoration ??
-              InputDecoration(
-                labelText: effectiveLabels.getDistrictLabel(widget.useThai),
-                border: const OutlineInputBorder(),
-              ),
+              InputDecoration(labelText: effectiveLabels.getDistrictLabel(widget.useThai), border: const OutlineInputBorder()),
           style: widget.textStyle,
           isExpanded: true,
           items: districts.map((district) {
             return DropdownMenuItem(
               value: district,
-              child: Text(
-                widget.useThai ? district.nameTh : district.nameEn,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(widget.useThai ? district.nameTh : district.nameEn, overflow: TextOverflow.ellipsis),
             );
           }).toList(),
           onChanged: widget.enabled && state.selectedProvince != null
@@ -204,19 +188,13 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
           value: state.selectedSubDistrict,
           decoration:
               widget.subDistrictDecoration ??
-              InputDecoration(
-                labelText: effectiveLabels.getSubDistrictLabel(widget.useThai),
-                border: const OutlineInputBorder(),
-              ),
+              InputDecoration(labelText: effectiveLabels.getSubDistrictLabel(widget.useThai), border: const OutlineInputBorder()),
           style: widget.textStyle,
           isExpanded: true,
           items: subDistricts.map((subDistrict) {
             return DropdownMenuItem(
               value: subDistrict,
-              child: Text(
-                widget.useThai ? subDistrict.nameTh : subDistrict.nameEn,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(widget.useThai ? subDistrict.nameTh : subDistrict.nameEn, overflow: TextOverflow.ellipsis),
             );
           }).toList(),
           onChanged: widget.enabled && state.selectedDistrict != null
@@ -228,24 +206,52 @@ class _ThaiAddressFormState extends ConsumerState<ThaiAddressForm> {
         ),
         const SizedBox(height: 16),
 
-        // Zip Code Autocomplete with Smart Suggestions
-        ZipCodeAutocomplete(
-          controller: _zipCodeController,
-          decoration:
-              widget.zipCodeDecoration ??
-              InputDecoration(
-                labelText: effectiveLabels.getZipCodeLabel(widget.useThai),
-                hintText: effectiveLabels.getZipCodeHint(widget.useThai),
-                helperText: effectiveLabels.getZipCodeHelper(widget.useThai),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.local_post_office),
-                errorText: state.error,
-              ),
-          enabled: widget.enabled,
-          onZipCodeSelected: (zipCode) {
-            _notifyChange();
-          },
-        ),
+        // Zip Code field - Autocomplete OR Simple TextField
+        if (widget.showZipCodeAutocomplete)
+          // Zip Code Autocomplete with Smart Suggestions
+          ZipCodeAutocomplete(
+            controller: _zipCodeController,
+            decoration:
+                widget.zipCodeDecoration ??
+                InputDecoration(
+                  labelText: effectiveLabels.getZipCodeLabel(widget.useThai),
+                  hintText: effectiveLabels.getZipCodeHint(widget.useThai),
+                  helperText: effectiveLabels.getZipCodeHelper(widget.useThai),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.local_post_office),
+                  errorText: state.error,
+                ),
+            enabled: widget.enabled,
+            onZipCodeSelected: (zipCode) {
+              _notifyChange();
+            },
+          )
+        else
+          // Simple TextField for Zip Code (no autocomplete)
+          TextField(
+            controller: _zipCodeController,
+            decoration:
+                widget.zipCodeDecoration ??
+                InputDecoration(
+                  labelText: effectiveLabels.getZipCodeLabel(widget.useThai),
+                  hintText: effectiveLabels.getZipCodeHint(widget.useThai),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.local_post_office),
+                  errorText: state.error,
+                ),
+            keyboardType: TextInputType.number,
+            maxLength: 5,
+            enabled: widget.enabled,
+            onChanged: (value) {
+              if (value.isNotEmpty) {
+                notifier.setZipCode(value);
+              } else {
+                // Don't reset entire form, just clear zip code
+                notifier.clearZipCode();
+              }
+              _notifyChange();
+            },
+          ),
       ],
     );
   }
