@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thai_address_picker/src/repository/thai_address_repository.dart';
 import '../helpers/fake_asset_bundle.dart';
@@ -111,7 +110,7 @@ void main() {
       // PLUS Village0 (duplicate name) -> Should be skipped in searchVillages loop "containsKey check"
       // Total unique names: 30.
 
-      final results = repository.searchVillages('Village');
+      final _ = repository.searchVillages('Village');
       // If maxResults=20 (default), duplicates check happens first?
 
       // Logic: Loop all villages.

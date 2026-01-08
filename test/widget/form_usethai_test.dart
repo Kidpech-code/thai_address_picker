@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thai_address_picker/thai_address_picker.dart';
-import 'package:thai_address_picker/src/providers/thai_address_providers.dart';
 import '../helpers/fake_asset_bundle.dart';
 
 void main() {

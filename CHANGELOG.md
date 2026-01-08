@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2025-01-08
+
+### Added
+
+- 🧪 comprehensive tests for Thai address picker functionality
+- Implement unit tests for ThaiAddressNotifier to validate state management and selection logic for provinces, districts, sub-districts, and zip codes.
+- Create widget tests for ThaiAddressForm to ensure proper rendering, interaction, and state updates based on user input.
+- Develop tests for various components including village and zip code autocomplete to verify suggestion handling and selection callbacks.
+- Enhance coverage for picker dialogs and bottom sheets to confirm correct display and interaction behavior.
+- Ensure all tests utilize a fake asset bundle for consistent and isolated testing environments.
+
+### Changed
+
+- 📦 Bumped package version to 1.0.0
+- 📝 Updated documentation to reflect new version and testing features
+
+### Fixed
+
+- 🐛 Resolved minor bugs identified during testing phase
+
+### Performance
+
+- ⚡ Optimized test execution time and reliability
+
+### Documentation
+
+- 📖 Added test documentation and usage examples
+
 ## [0.3.0] - 2025-01-08
 
 ### Added

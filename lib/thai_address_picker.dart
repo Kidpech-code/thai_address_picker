@@ -1,3 +1,11 @@
+/// Thai Address Picker Library
+///
+/// A comprehensive library for selecting Thai addresses including:
+/// - Provinces, Districts, Sub-districts
+/// - Villages with Moo number support
+/// - Zip codes with auto-complete and reverse lookup
+library;
+
 // Models
 export 'src/models/geography.dart';
 export 'src/models/province.dart';

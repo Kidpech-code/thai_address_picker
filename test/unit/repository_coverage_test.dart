@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:thai_address_picker/src/repository/thai_address_repository.dart';
 import 'package:thai_address_picker/thai_address_picker.dart';
 // import 'package:flutter/foundation.dart';
 
@@ -58,7 +57,7 @@ void main() {
     });
 
     test('parseJsonInIsolate handles all types correctly', () {
-      const json =
+      const _ =
           '[{"id": 1, "name_th": "th", "name_en": "en"}]'; // Minimal valid JSON for most
       // Geography might have different fields, check model.
       // Geography: int id, String name.
