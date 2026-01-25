@@ -39,7 +39,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  thai_address_picker: ^1.0.2
+  thai_address_picker: ^1.0.3
 ```
 
 ---
