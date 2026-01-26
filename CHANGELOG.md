@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2025-01-09
+
+### Added
+
+- upgrade dependencies Support for Dart SDK 3.8.1 and above
+
 ## [1.0.3] - 2025-01-09
 
 ### Added
