@@ -14,10 +14,7 @@ void main() {
   });
 
   Widget createSubject(Widget child) {
-    return ProviderScope(
-      overrides: [thaiAddressRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp(home: Scaffold(body: child)),
-    );
+    return MaterialApp(home: Scaffold(body: child));
   }
 
   testWidgets('showBottomSheet opens sheet and cancels via header close icon', (
@@ -30,6 +27,7 @@ void main() {
             return ElevatedButton(
               onPressed: () => ThaiAddressPicker.showBottomSheet(
                 context: context,
+                repository: repository,
                 useThai: true,
               ),
               child: const Text('Open Sheet'),
@@ -62,6 +60,7 @@ void main() {
             return ElevatedButton(
               onPressed: () => ThaiAddressPicker.showBottomSheet(
                 context: context,
+                repository: repository,
                 height: customHeight,
               ),
               child: const Text('Open Sheet'),
@@ -74,24 +73,8 @@ void main() {
     await tester.tap(find.text('Open Sheet'));
     await tester.pumpAndSettle();
 
-    // Verify height
-    // _PickerContent root container has height
-    final _ = tester.widget<Container>(
-      find
-          .descendant(
-            of: find.byType(BottomSheet),
-            matching: find.byType(Container).first,
-          )
-          .first,
-    );
-    // Note: _PickerContent implementation wraps in Container with height.
-    // However, finding the *exact* container is hard.
-    // The Container inside _PickerContent has height: widget.height
-    // But BottomSheet also has containers.
-
-    // We can rely on validation that code is exercised, even if we don't strictly assert height value
-    // (though good test should).
-    // Let's settle for exercising the parameter.
+    // Verify height — just exercise the parameter path
+    expect(find.byType(BottomSheet), findsOneWidget);
   });
 
   testWidgets('showBottomSheet with useThai=false displays English title', (
@@ -104,7 +87,8 @@ void main() {
             return ElevatedButton(
               onPressed: () => ThaiAddressPicker.showBottomSheet(
                 context: context,
-                useThai: false, // ENGLISH
+                repository: repository,
+                useThai: false,
               ),
               child: const Text('Open Sheet'),
             );

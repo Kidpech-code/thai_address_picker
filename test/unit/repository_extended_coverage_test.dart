@@ -82,11 +82,11 @@ void main() {
       await repository.initialize(bundle: FakeAssetBundle(), useIsolate: false);
     });
 
-    test('searchVillages validation', () {
-      expect(repository.searchVillages(''), isEmpty);
+    test('searchVillages validation', () async {
+      expect(await repository.searchVillages(''), isEmpty);
 
       // Should match 'บ้าน'
-      final results = repository.searchVillages('บ้าน');
+      final results = await repository.searchVillages('บ้าน');
       expect(results.length, 2);
       // Logic sorts by nameTh
       expect(
@@ -95,7 +95,7 @@ void main() {
       ); // "บ้านทดสอบ" < "บ้านทดสอบ2"
 
       // Check maxResults
-      final limited = repository.searchVillages('บ้าน', maxResults: 1);
+      final limited = await repository.searchVillages('บ้าน', maxResults: 1);
       expect(limited.length, 1);
     });
 
@@ -153,9 +153,12 @@ void main() {
 
       // But maxResults limit:
       // query 'Village' matches all 30.
-      expect(repository.searchVillages('Village', maxResults: 5).length, 5);
       expect(
-        repository.searchVillages('Village', maxResults: 40).length,
+        (await repository.searchVillages('Village', maxResults: 5)).length,
+        5,
+      );
+      expect(
+        (await repository.searchVillages('Village', maxResults: 40)).length,
         31,
       ); // 31 unique IDs
     });
@@ -181,14 +184,14 @@ void main() {
       expect(full.length, 30);
     });
 
-    test('getVillagesBySubDistrict returns sorted list by mooNo', () {
-      final villages = repository.getVillagesBySubDistrict(100101);
+    test('getVillagesBySubDistrict returns sorted list by mooNo', () async {
+      final villages = await repository.getVillagesBySubDistrict(100101);
       expect(villages.length, 2);
       expect(villages[0].mooNo, 1); // id 2
       expect(villages[1].mooNo, 2); // id 1
 
       // And check empty for invalid
-      expect(repository.getVillagesBySubDistrict(999), isEmpty);
+      expect(await repository.getVillagesBySubDistrict(999), isEmpty);
     });
 
     test('searchZipCodes validation', () {
@@ -213,7 +216,7 @@ void main() {
         useIsolate: false,
       );
 
-      final results = repository.searchVillages('Broken');
+      final results = await repository.searchVillages('Broken');
       expect(results.length, 1);
       expect(results.first.subDistrict, isNull);
       expect(results.first.district, isNull);

@@ -1,51 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repository/thai_address_repository.dart';
-import '../providers/thai_address_providers.dart';
+import '../contracts/i_thai_address_repository.dart';
+import '../models/suggestions.dart';
 import '../models/thai_address_labels.dart';
 
-/// High-performance Zip Code Autocomplete Widget
+/// Pure-Flutter zip-code autocomplete widget.
 ///
-/// Provides real-time autocomplete for Thai zip codes with:
-/// - **Instant suggestions** from first digit typed
-/// - **Prefix matching** for accurate results (e.g., "102" matches 10200, 10210)
-/// - **Full address preview** in dropdown (Zip • SubDistrict • District • Province)
-/// - **Multi-area handling** for zip codes with multiple locations
-/// - **Auto-fill cascade** when suggestion is selected
+/// **No Riverpod, BLoC, or any state-management library is required.**
 ///
-/// Performance:
-/// - O(k) search complexity where k = [maxSuggestions] (default: 20)
-/// - Early exit optimization for fast response
-/// - No blocking operations, runs on UI thread efficiently
+/// Supply an [IThaiAddressRepository] directly; the widget queries it for
+/// prefix-matched suggestions and exposes results through callbacks:
 ///
-/// Usage:
 /// ```dart
 /// ZipCodeAutocomplete(
-///   decoration: InputDecoration(labelText: 'Zip Code'),
-///   onZipCodeSelected: (zip) => print('Selected: $zip'),
+///   repository: myRepository,
+///   onSuggestionSelected: (suggestion) {
+///     print('Selected: ${suggestion.zipCode}');
+///   },
 /// )
 /// ```
 ///
-/// Features:
-/// - Real-time search without debouncing (optimized for performance)
-/// - Prefix matching for accurate suggestions
-/// - Shows full address hierarchy (ZipCode → SubDistrict → District → Province)
-/// - Handles multiple areas with same zip code
-/// - O(k) search with early exit optimization where k = maxSuggestions
-class ZipCodeAutocomplete extends ConsumerStatefulWidget {
+/// Typically used inside [ThaiAddressForm], which wires the callbacks to its
+/// [ThaiAddressController] automatically.  Can also be used standalone.
+class ZipCodeAutocomplete extends StatefulWidget {
+  /// The data source used to query zip-code suggestions.
+  final IThaiAddressRepository repository;
+
+  /// External [TextEditingController].  If omitted an internal one is created.
   final TextEditingController? controller;
+
+  /// Decoration applied to the underlying [TextField].
   final InputDecoration? decoration;
-  final ValueChanged<String>? onZipCodeSelected;
+
+  /// Called whenever the raw text changes (after every keystroke).
+  final ValueChanged<String>? onZipCodeChanged;
+
+  /// Called when the user selects a suggestion from the dropdown.
+  final ValueChanged<ZipCodeSuggestion>? onSuggestionSelected;
+
+  /// Called when the field is cleared.
+  final VoidCallback? onCleared;
+
+  /// Maximum number of dropdown suggestions (default 20).
   final int maxSuggestions;
+
   final bool enabled;
   final bool useThai;
   final ThaiAddressLabels? labels;
 
   const ZipCodeAutocomplete({
     super.key,
+    required this.repository,
     this.controller,
     this.decoration,
-    this.onZipCodeSelected,
+    this.onZipCodeChanged,
+    this.onSuggestionSelected,
+    this.onCleared,
     this.maxSuggestions = 20,
     this.enabled = true,
     this.useThai = true,
@@ -53,14 +62,13 @@ class ZipCodeAutocomplete extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ZipCodeAutocomplete> createState() =>
-      _ZipCodeAutocompleteState();
+  State<ZipCodeAutocomplete> createState() => _ZipCodeAutocompleteState();
 }
 
-class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
+class _ZipCodeAutocompleteState extends State<ZipCodeAutocomplete> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
-  bool _isControllerInternal = false;
+  bool _internalController = false;
 
   @override
   void initState() {
@@ -68,7 +76,7 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
     _focusNode = FocusNode();
     if (widget.controller == null) {
       _controller = TextEditingController();
-      _isControllerInternal = true;
+      _internalController = true;
     } else {
       _controller = widget.controller!;
     }
@@ -77,84 +85,63 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
   @override
   void dispose() {
     _focusNode.dispose();
-    if (_isControllerInternal) {
-      _controller.dispose();
-    }
+    if (_internalController) _controller.dispose();
     super.dispose();
   }
 
+  ThaiAddressLabels get _labels =>
+      widget.labels ??
+      (widget.useThai ? ThaiAddressLabels.thai : ThaiAddressLabels.english);
+
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.read(thaiAddressNotifierProvider.notifier);
-
     return RawAutocomplete<ZipCodeSuggestion>(
       focusNode: _focusNode,
       textEditingController: _controller,
-      optionsBuilder: (TextEditingValue textEditingValue) {
-        final query = textEditingValue.text;
-
-        // Return empty if query is empty or not numeric
+      optionsBuilder: (TextEditingValue value) {
+        final query = value.text;
         if (query.isEmpty || !RegExp(r'^\d+$').hasMatch(query)) {
           return const Iterable<ZipCodeSuggestion>.empty();
         }
-
-        // Search with max results limit for performance
-        final suggestions = notifier.searchZipCodes(
+        return widget.repository.searchZipCodes(
           query,
           maxResults: widget.maxSuggestions,
         );
-
-        return suggestions;
       },
-      displayStringForOption: (ZipCodeSuggestion suggestion) {
-        return suggestion.zipCode;
-      },
+      displayStringForOption: (s) => s.zipCode,
       fieldViewBuilder:
           (
-            BuildContext context,
-            TextEditingController textEditingController,
+            BuildContext ctx,
+            TextEditingController textCtrl,
             FocusNode focusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            final effectiveLabels =
-                widget.labels ??
-                (widget.useThai
-                    ? ThaiAddressLabels.thai
-                    : ThaiAddressLabels.english);
-
             return TextField(
-              controller: textEditingController,
+              controller: textCtrl,
               focusNode: focusNode,
               enabled: widget.enabled,
               decoration:
                   widget.decoration ??
                   InputDecoration(
-                    labelText: effectiveLabels.getZipCodeLabel(widget.useThai),
-                    hintText: effectiveLabels.getZipCodeHint(widget.useThai),
-                    helperText: effectiveLabels.getZipCodeHelper(
-                      widget.useThai,
-                    ),
+                    labelText: _labels.getZipCodeLabel(widget.useThai),
+                    hintText: _labels.getZipCodeHint(widget.useThai),
+                    helperText: _labels.getZipCodeHelper(widget.useThai),
                     prefixIcon: const Icon(Icons.local_post_office),
                   ),
               keyboardType: TextInputType.number,
               maxLength: 5,
-              onChanged: (value) {
-                // Real-time update: trigger for any length
-                // But only auto-fill when it's exactly 5 digits
-                if (value.isNotEmpty) {
-                  ref
-                      .read(thaiAddressNotifierProvider.notifier)
-                      .setZipCode(value);
+              onChanged: (v) {
+                if (v.isEmpty) {
+                  widget.onCleared?.call();
                 } else {
-                  // Clear when empty
-                  ref.read(thaiAddressNotifierProvider.notifier).reset();
+                  widget.onZipCodeChanged?.call(v);
                 }
               },
             );
           },
       optionsViewBuilder:
           (
-            BuildContext context,
+            BuildContext ctx,
             AutocompleteOnSelected<ZipCodeSuggestion> onSelected,
             Iterable<ZipCodeSuggestion> options,
           ) {
@@ -172,9 +159,8 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
                     padding: const EdgeInsets.all(8),
                     shrinkWrap: true,
                     itemCount: options.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final suggestion = options.elementAt(index);
-
+                    itemBuilder: (_, int i) {
+                      final s = options.elementAt(i);
                       return ListTile(
                         dense: true,
                         leading: Container(
@@ -183,28 +169,27 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withOpacity(0.1),
+                            // ignore: deprecated_member_use
+                            color: Theme.of(ctx).primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            suggestion.zipCode,
+                            s.zipCode,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
+                              color: Theme.of(ctx).primaryColor,
                             ),
                           ),
                         ),
                         title: Text(
-                          suggestion.displayText,
+                          s.displayText,
                           style: const TextStyle(fontSize: 14),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: suggestion.displayTextEn.isNotEmpty
+                        subtitle: s.displayTextEn.isNotEmpty
                             ? Text(
-                                suggestion.displayTextEn,
+                                s.displayTextEn,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,
@@ -213,9 +198,7 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
                                 overflow: TextOverflow.ellipsis,
                               )
                             : null,
-                        onTap: () {
-                          onSelected(suggestion);
-                        },
+                        onTap: () => onSelected(s),
                       );
                     },
                   ),
@@ -224,14 +207,8 @@ class _ZipCodeAutocompleteState extends ConsumerState<ZipCodeAutocomplete> {
             );
           },
       onSelected: (ZipCodeSuggestion suggestion) {
-        // Update controller
         _controller.text = suggestion.zipCode;
-
-        // Auto-fill all address fields
-        notifier.selectZipCodeSuggestion(suggestion);
-
-        // Callback
-        widget.onZipCodeSelected?.call(suggestion.zipCode);
+        widget.onSuggestionSelected?.call(suggestion);
       },
     );
   }

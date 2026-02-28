@@ -16,17 +16,18 @@ void main() {
       repository.resetForTesting();
     });
 
-    test('getters throw StateError when not initialized', () {
+    test('getters throw StateError when not initialized', () async {
       expect(() => repository.geographies, throwsStateError);
       expect(() => repository.provinces, throwsStateError);
       expect(() => repository.districts, throwsStateError);
       expect(() => repository.subDistricts, throwsStateError);
-      expect(() => repository.villages, throwsStateError);
+      // Note: villages is now lazy/async — accessed via getVillagesBySubDistrict()
 
       expect(() => repository.searchProvinces(''), throwsStateError);
       expect(() => repository.searchDistricts(''), throwsStateError);
       expect(() => repository.searchSubDistricts(''), throwsStateError);
-      expect(() => repository.searchVillages(''), throwsStateError);
+      // searchVillages is async — it returns a Future that rejects when uninitialized
+      expect(repository.searchVillages('test'), throwsA(isA<StateError>()));
       expect(() => repository.searchZipCodes(''), throwsStateError);
 
       expect(() => repository.getSubDistrictsByZipCode(''), throwsStateError);

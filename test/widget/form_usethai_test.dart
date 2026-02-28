@@ -4,62 +4,56 @@ import 'package:thai_address_picker/thai_address_picker.dart';
 import '../helpers/fake_asset_bundle.dart';
 
 void main() {
+  late ThaiAddressRepository repo;
+
   setUpAll(() async {
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
+    ThaiAddressRepository().resetForTesting();
+    repo = ThaiAddressRepository();
+    await repo.initialize(bundle: FakeAssetBundle(), useIsolate: false);
   });
 
   testWidgets('ThaiAddressForm displays English names when useThai is false', (
     tester,
   ) async {
-    final repo = ThaiAddressRepository();
     final p = repo.provinces.first;
+    final ctrl = ThaiAddressController(repository: repo);
+    ctrl.selectProvince(p);
+    addTearDown(ctrl.dispose);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [repositoryInitProvider.overrideWith((ref) async {})],
-        child: MaterialApp(
-          home: Scaffold(
-            body: ThaiAddressForm(initialProvince: p, useThai: false),
-          ),
-        ),
+      MaterialApp(
+        home: Scaffold(body: ThaiAddressForm(controller: ctrl, useThai: false)),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Should find English name "P1_EN" not "P1"
     expect(find.text('P1_EN'), findsOneWidget);
-    expect(find.text('P1'), findsNothing); // Ensure Thai name is NOT shown
-
-    // Also check labels if possible? Labels might differ.
+    expect(find.text('P1'), findsNothing);
   });
 
   testWidgets('ThaiAddressForm uses custom decorations', (tester) async {
-    final repo = ThaiAddressRepository();
     final p = repo.provinces.first;
+    final ctrl = ThaiAddressController(repository: repo);
+    ctrl.selectProvince(p);
+    addTearDown(ctrl.dispose);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [repositoryInitProvider.overrideWith((ref) async {})],
-        child: MaterialApp(
-          home: Scaffold(
-            body: ThaiAddressForm(
-              initialProvince: p,
-              provinceDecoration: const InputDecoration(
-                labelText: 'Custom Province',
-                border: OutlineInputBorder(),
-              ),
-              districtDecoration: const InputDecoration(
-                labelText: 'Custom District',
-              ),
-              subDistrictDecoration: const InputDecoration(
-                labelText: 'Custom SubDistrict',
-              ),
-              zipCodeDecoration: const InputDecoration(labelText: 'Custom Zip'),
-              textStyle: const TextStyle(fontSize: 20, color: Colors.blue),
+      MaterialApp(
+        home: Scaffold(
+          body: ThaiAddressForm(
+            controller: ctrl,
+            provinceDecoration: const InputDecoration(
+              labelText: 'Custom Province',
+              border: OutlineInputBorder(),
             ),
+            districtDecoration: const InputDecoration(
+              labelText: 'Custom District',
+            ),
+            subDistrictDecoration: const InputDecoration(
+              labelText: 'Custom SubDistrict',
+            ),
+            zipCodeDecoration: const InputDecoration(labelText: 'Custom Zip'),
+            textStyle: const TextStyle(fontSize: 20, color: Colors.blue),
           ),
         ),
       ),

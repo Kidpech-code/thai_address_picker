@@ -33,9 +33,10 @@ void main() {
     // Verify SubDistricts
     expect(repo.subDistricts.length, 4);
     expect(repo.getSubDistrictsByDistrict(1001).length, 4);
-    expect(repo.villages.length, 2);
-    expect(repo.getVillagesBySubDistrict(100101).length, 2);
-    expect(repo.getVillagesBySubDistrict(100101).first.nameTh, 'บ้านทดสอบ2');
+    // Villages are lazy-loaded — accessed via async API
+    final villages = await repo.getVillagesBySubDistrict(100101);
+    expect(villages.length, 2);
+    expect(villages.first.nameTh, 'บ้านทดสอบ2');
 
     // Check ZipCode index?
     // The zip code index is private _zipCodeIndex, but accessed via something?

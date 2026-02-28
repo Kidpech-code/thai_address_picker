@@ -4,8 +4,78 @@ import 'package:thai_address_picker/thai_address_picker.dart';
 
 import '../helpers/fake_asset_bundle.dart';
 
+// A minimal IThaiAddressRepository implementation that always fails to init.
+// Used to test the form's error state.
+class _FailingRepository implements IThaiAddressRepository {
+  @override
+  bool get isInitialized => false;
+  @override
+  Future<void> initialize({AssetBundle? bundle, bool useIsolate = true}) =>
+      Future.error('Simulated Error');
+  @override
+  void clearVillageCache() {}
+  @override
+  List<Geography> get geographies => throw UnimplementedError();
+  @override
+  List<Province> get provinces => throw UnimplementedError();
+  @override
+  List<District> get districts => throw UnimplementedError();
+  @override
+  List<SubDistrict> get subDistricts => throw UnimplementedError();
+  @override
+  Geography? getGeographyById(int id) => null;
+  @override
+  Province? getProvinceById(int id) => null;
+  @override
+  District? getDistrictById(int id) => null;
+  @override
+  SubDistrict? getSubDistrictById(int id) => null;
+  @override
+  List<Province> getProvincesByGeography(int geographyId) => [];
+  @override
+  List<District> getDistrictsByProvince(int provinceId) => [];
+  @override
+  List<SubDistrict> getSubDistrictsByDistrict(int districtId) => [];
+  @override
+  Future<List<Village>> getVillagesBySubDistrict(int subDistrictId) async => [];
+  @override
+  List<SubDistrict> getSubDistrictsByZipCode(String zipCode) => [];
+  @override
+  List<Province> searchProvinces(String query) => [];
+  @override
+  List<District> searchDistricts(String query, {int? provinceId}) => [];
+  @override
+  List<SubDistrict> searchSubDistricts(String query, {int? districtId}) => [];
+  @override
+  Future<List<VillageSuggestion>> searchVillages(
+    String query, {
+    int maxResults = 20,
+  }) async => [];
+  @override
+  List<ZipCodeSuggestion> searchZipCodes(String query, {int maxResults = 20}) =>
+      [];
+  @override
+  List<String> getAllZipCodes() => [];
+  @override
+  Map<String, dynamic> getFullAddressFromSubDistrict(SubDistrict subDistrict) =>
+      {};
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  late ThaiAddressRepository repository;
+  ThaiAddressController ctrl = ThaiAddressController(
+    repository: ThaiAddressRepository(),
+  );
+
+  setUp(() async {
+    ThaiAddressRepository().resetForTesting();
+    repository = ThaiAddressRepository();
+    await repository.initialize(bundle: FakeAssetBundle(), useIsolate: false);
+    ctrl = ThaiAddressController(repository: repository);
+    addTearDown(ctrl.dispose);
+  });
 
   Widget createSubject({
     void Function(ThaiAddress)? onChanged,
@@ -13,45 +83,26 @@ void main() {
     ThaiAddressLabels? labels,
     bool useThai = true,
   }) {
-    return ProviderScope(
-      overrides: [
-        // Override global provider if needed, but usually we rely on repository being mocked
-        // However, the form uses repositoryInitProvider which calls repository.initialize.
-        // We should ensure repository uses our FakeAssetBundle.
-        // Since repository is singleton, we must configure it before pump.
-      ],
-      child: MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: ThaiAddressForm(
-              onChanged: onChanged,
-              enabled: enabled,
-              labels: labels,
-              useThai: useThai,
-            ),
+    return MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: ThaiAddressForm(
+            controller: ctrl,
+            onChanged: onChanged,
+            enabled: enabled,
+            labels: labels,
+            useThai: useThai,
           ),
         ),
       ),
     );
   }
 
-  setUp(() {
-    ThaiAddressRepository().resetForTesting();
-  });
-
   testWidgets('ThaiAddressForm loads and displays form', (tester) async {
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
-
     await tester.pumpWidget(createSubject());
-    // Pump until future completes
     await tester.pumpAndSettle();
 
-    // Should be loaded
     expect(find.byType(ThaiAddressForm), findsOneWidget);
-    // Use findsWidgets because there are multiple fields
     expect(
       find.byType(DropdownButtonFormField<Province>),
       findsAtLeastNWidgets(1),
@@ -59,29 +110,20 @@ void main() {
   });
 
   testWidgets('ThaiAddressForm shows error on init failure', (tester) async {
-    // Override provider to simulate error
+    final failCtrl = ThaiAddressController(repository: _FailingRepository());
+    addTearDown(failCtrl.dispose);
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          repositoryInitProvider.overrideWith(
-            (ref) => Future.error('Simulated Error'),
-          ),
-        ],
-        child: MaterialApp(home: Scaffold(body: ThaiAddressForm())),
+      MaterialApp(
+        home: Scaffold(body: ThaiAddressForm(controller: failCtrl)),
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Simulated Error'), findsOneWidget);
+    expect(find.textContaining('Error loading data'), findsOneWidget);
   });
 
   testWidgets('ThaiAddressForm calls onChanged logic only when enabled', (
     tester,
   ) async {
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
-
     await tester.pumpWidget(createSubject(enabled: false));
     await tester.pumpAndSettle();
 
@@ -92,10 +134,6 @@ void main() {
   });
 
   testWidgets('ThaiAddressForm notifies on change', (tester) async {
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
     ThaiAddress? result;
 
     await tester.pumpWidget(
@@ -103,7 +141,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Select Province
     await tester.tap(find.byType(DropdownButtonFormField<Province>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('P1_EN').last);
@@ -116,55 +153,33 @@ void main() {
   testWidgets('ThaiAddressForm initializes with initial values', (
     tester,
   ) async {
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
-    final repo = ThaiAddressRepository();
-    final p = repo.provinces.first; // P1
-    final d = repo.districts.first; // D1
-    final s = repo.subDistricts.first; // SD1
+    final p = repository.provinces.first;
+    final d = repository.districts.first;
+    final s = repository.subDistricts.first;
+
+    // Seed the controller with initial values before building the form
+    ctrl.selectProvince(p);
+    ctrl.selectDistrict(d);
+    ctrl.selectSubDistrict(s);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [repositoryInitProvider.overrideWith((ref) async {})],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ThaiAddressForm(
-                initialProvince: p,
-                initialDistrict: d,
-                initialSubDistrict: s,
-              ),
-            ),
-          ),
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(child: ThaiAddressForm(controller: ctrl)),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Check if dropdowns selected
-    // Note: DropdownButtonFormField displays the selected item's child.
-    // P1 -> "Province 1" (nameTh)
-    // D1 -> "D1"
-    // SD1 -> "SD1"
-    // ZipCode -> "10200"
-
-    expect(find.text('P1'), findsOneWidget); // Found in Province Dropdown
+    expect(find.text('P1'), findsOneWidget);
     expect(find.text('D1'), findsOneWidget);
     expect(find.text('SD1'), findsOneWidget);
     expect(find.text('10200'), findsOneWidget);
   });
 
   testWidgets('ThaiAddressForm disposes safely', (tester) async {
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
     await tester.pumpWidget(createSubject());
     await tester.pumpAndSettle();
-
-    // Replace widget to trigger dispose
     await tester.pumpWidget(Container());
     await tester.pumpAndSettle();
   });
@@ -172,52 +187,25 @@ void main() {
   testWidgets(
     'ThaiAddressForm updates zip code when state changes externally',
     (tester) async {
-      await ThaiAddressRepository().initialize(
-        bundle: FakeAssetBundle(),
-        useIsolate: false,
-      );
-
-      // We need to access the provider container to modify state directly
-      // So we can't use our helper directly if we need the container.
-      final container = ProviderContainer();
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(home: Scaffold(body: ThaiAddressForm())),
-        ),
-      );
+      await tester.pumpWidget(createSubject());
       await tester.pumpAndSettle();
 
-      // Force set zip code in notifier
-      // We can't access notifier directly from here easily without exposing it.
-      // But we can select subdistrict which sets zip code.
-      final repo = ThaiAddressRepository();
-      final p = repo.provinces.first;
-      final d = repo.districts.first;
-      final s = repo.subDistricts.first; // Should have zip 10200
+      final p = repository.provinces.first;
+      final d = repository.districts.first;
+      final s = repository.subDistricts.first;
 
-      final notifier = container.read(thaiAddressNotifierProvider.notifier);
-
-      // Changing province/district to setup
-      notifier.selectProvince(p);
-      notifier.selectDistrict(d);
-
+      ctrl.selectProvince(p);
+      ctrl.selectDistrict(d);
       await tester.pumpAndSettle();
 
-      // Now convert subdistrict selection
-      // This should update text controller
-      notifier.selectSubDistrict(s);
+      ctrl.selectSubDistrict(s);
       await tester.pumpAndSettle();
 
-      expect(find.text('10200'), findsOneWidget); // Should be in TextField
+      expect(find.text('10200'), findsOneWidget);
 
-      // Clear zip code
-      // notifier.clear(); // Error: method not defined
-      notifier.reset();
+      ctrl.reset();
       await tester.pumpAndSettle();
 
-      // Should be empty
       expect(find.text('10200'), findsNothing);
     },
   );
@@ -225,27 +213,9 @@ void main() {
   testWidgets('ThaiAddressForm works without onChanged callback', (
     tester,
   ) async {
-    // Initialize repo
-    await ThaiAddressRepository().initialize(
-      bundle: FakeAssetBundle(),
-      useIsolate: false,
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [repositoryInitProvider.overrideWith((ref) async {})],
-        child: MaterialApp(
-          home: Scaffold(
-            body: ThaiAddressForm(
-              // No onChanged provided
-            ),
-          ),
-        ),
-      ),
-    );
+    await tester.pumpWidget(createSubject());
     await tester.pumpAndSettle();
 
-    // Select Province should not crash
     await tester.tap(find.byType(DropdownButtonFormField<Province>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('P1').last);

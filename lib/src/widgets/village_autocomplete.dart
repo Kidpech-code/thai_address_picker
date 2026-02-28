@@ -1,52 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repository/thai_address_repository.dart';
-import '../providers/thai_address_providers.dart';
-import '../models/village.dart';
+import '../contracts/i_thai_address_repository.dart';
+import '../models/suggestions.dart';
 import '../models/thai_address_labels.dart';
 
-/// High-performance Village Autocomplete Widget
+/// Pure-Flutter village autocomplete widget.
 ///
-/// Provides real-time autocomplete for Thai villages (หมู่บ้าน) with:
-/// - **Instant suggestions** from first character typed
-/// - **Substring matching** for flexible search (e.g., "บ้าน" matches all villages with "บ้าน")
-/// - **Full address preview** in dropdown (Village • หมู่ • SubDistrict • District • Province)
-/// - **Moo number display** (หมู่ที่) for accurate village identification
-/// - **Auto-fill cascade** when suggestion is selected
+/// **No Riverpod, BLoC, or any state-management library is required.**
 ///
-/// Performance:
-/// - O(k) search complexity where k = [maxSuggestions] (default: 20)
-/// - Early exit optimization for fast response
-/// - No blocking operations, runs on UI thread efficiently
+/// Supply an [IThaiAddressRepository] directly.  Village data is loaded lazily
+/// by the repository, so this widget works without any upfront cost.
 ///
-/// Usage:
 /// ```dart
 /// VillageAutocomplete(
-///   decoration: InputDecoration(labelText: 'หมู่บ้าน'),
-///   onVillageSelected: (village) => print('Selected: ${village.nameTh}'),
+///   repository: myRepository,
+///   onSuggestionSelected: (suggestion) {
+///     print('Village: ${suggestion.village.nameTh}');
+///   },
 /// )
 /// ```
 ///
-/// Features:
-/// - Real-time search from first character
-/// - Substring matching for Thai text
-/// - Shows full address hierarchy (Village • หมู่ • SubDistrict • District • Province)
-/// - Handles village name duplicates across different areas
-/// - O(k) search with early exit optimization where k = maxSuggestions
-class VillageAutocomplete extends ConsumerStatefulWidget {
+/// When this widget is embedded inside [ThaiAddressForm], callbacks are wired
+/// to the [ThaiAddressController] automatically.
+class VillageAutocomplete extends StatefulWidget {
+  /// The data source used to query village suggestions (loaded lazily).
+  final IThaiAddressRepository repository;
+
+  /// External [TextEditingController].  If omitted an internal one is created.
   final TextEditingController? controller;
+
+  /// Decoration applied to the underlying [TextField].
   final InputDecoration? decoration;
-  final ValueChanged<Village>? onVillageSelected;
+
+  /// Called when the user selects a suggestion from the dropdown.
+  final ValueChanged<VillageSuggestion>? onSuggestionSelected;
+
+  /// Maximum number of dropdown suggestions (default 20).
   final int maxSuggestions;
+
   final bool enabled;
   final bool useThai;
   final ThaiAddressLabels? labels;
 
   const VillageAutocomplete({
     super.key,
+    required this.repository,
     this.controller,
     this.decoration,
-    this.onVillageSelected,
+    this.onSuggestionSelected,
     this.maxSuggestions = 20,
     this.enabled = true,
     this.useThai = true,
@@ -54,14 +54,13 @@ class VillageAutocomplete extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<VillageAutocomplete> createState() =>
-      _VillageAutocompleteState();
+  State<VillageAutocomplete> createState() => _VillageAutocompleteState();
 }
 
-class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
+class _VillageAutocompleteState extends State<VillageAutocomplete> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
-  bool _isControllerInternal = false;
+  bool _internalController = false;
 
   @override
   void initState() {
@@ -69,7 +68,7 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
     _focusNode = FocusNode();
     if (widget.controller == null) {
       _controller = TextEditingController();
-      _isControllerInternal = true;
+      _internalController = true;
     } else {
       _controller = widget.controller!;
     }
@@ -78,63 +77,48 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
   @override
   void dispose() {
     _focusNode.dispose();
-    if (_isControllerInternal) {
-      _controller.dispose();
-    }
+    if (_internalController) _controller.dispose();
     super.dispose();
   }
 
+  ThaiAddressLabels get _labels =>
+      widget.labels ??
+      (widget.useThai ? ThaiAddressLabels.thai : ThaiAddressLabels.english);
+
   @override
   Widget build(BuildContext context) {
-    final repository = ref.watch(thaiAddressRepositoryProvider);
-
     return RawAutocomplete<VillageSuggestion>(
       focusNode: _focusNode,
       textEditingController: _controller,
-      optionsBuilder: (TextEditingValue textEditingValue) {
-        final query = textEditingValue.text;
-
-        // Return empty if query is too short (less than 1 character)
-        if (query.isEmpty) {
+      // optionsBuilder accepts FutureOr<Iterable> — the Future path is used
+      // here since village data may still be loading.
+      optionsBuilder: (TextEditingValue value) {
+        if (value.text.isEmpty) {
           return const Iterable<VillageSuggestion>.empty();
         }
-
-        // Search with max results limit for performance
-        final suggestions = repository.searchVillages(
-          query,
+        return widget.repository.searchVillages(
+          value.text,
           maxResults: widget.maxSuggestions,
         );
-
-        return suggestions;
       },
-      displayStringForOption: (VillageSuggestion suggestion) {
-        return suggestion.village.nameTh;
-      },
+      displayStringForOption: (s) => s.village.nameTh,
       fieldViewBuilder:
           (
-            BuildContext context,
-            TextEditingController textEditingController,
+            BuildContext ctx,
+            TextEditingController textCtrl,
             FocusNode focusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            final effectiveLabels =
-                widget.labels ??
-                (widget.useThai
-                    ? ThaiAddressLabels.thai
-                    : ThaiAddressLabels.english);
-
             return TextField(
-              controller: textEditingController,
+              controller: textCtrl,
               focusNode: focusNode,
               enabled: widget.enabled,
               decoration:
                   widget.decoration ??
                   InputDecoration(
-                    labelText: effectiveLabels.getVillageLabel(widget.useThai),
-                    hintText: effectiveLabels.getVillageHint(widget.useThai),
-                    helperText: effectiveLabels.getVillageHelper(
-                      widget.useThai,
-                    ),
+                    labelText: _labels.getVillageLabel(widget.useThai),
+                    hintText: _labels.getVillageHint(widget.useThai),
+                    helperText: _labels.getVillageHelper(widget.useThai),
                     prefixIcon: const Icon(Icons.home),
                   ),
               keyboardType: TextInputType.text,
@@ -142,7 +126,7 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
           },
       optionsViewBuilder:
           (
-            BuildContext context,
+            BuildContext ctx,
             AutocompleteOnSelected<VillageSuggestion> onSelected,
             Iterable<VillageSuggestion> options,
           ) {
@@ -160,49 +144,49 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
                     padding: const EdgeInsets.all(8),
                     shrinkWrap: true,
                     itemCount: options.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final suggestion = options.elementAt(index);
-
+                    itemBuilder: (_, int i) {
+                      final s = options.elementAt(i);
                       return ListTile(
                         dense: true,
-                        leading: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            suggestion.displayMoo,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
+                        leading: s.displayMoo.isNotEmpty
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  // ignore: deprecated_member_use
+                                  color: Theme.of(
+                                    ctx,
+                                  ).primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  s.displayMoo,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(ctx).primaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              )
+                            : null,
                         title: Text(
-                          suggestion.displayText,
+                          s.displayText,
                           style: const TextStyle(fontSize: 14),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: suggestion.subDistrict?.zipCode != null
+                        subtitle: s.subDistrict?.zipCode != null
                             ? Text(
-                                'รหัสไปรษณีย์: ${suggestion.subDistrict!.zipCode}',
+                                'รหัสไปรษณีย์: ${s.subDistrict!.zipCode}',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,
                                 ),
                               )
                             : null,
-                        onTap: () {
-                          onSelected(suggestion);
-                        },
+                        onTap: () => onSelected(s),
                       );
                     },
                   ),
@@ -211,23 +195,8 @@ class _VillageAutocompleteState extends ConsumerState<VillageAutocomplete> {
             );
           },
       onSelected: (VillageSuggestion suggestion) {
-        // Update controller
         _controller.text = suggestion.village.nameTh;
-
-        // Auto-fill address fields if possible
-        if (suggestion.subDistrict != null) {
-          final notifier = ref.read(thaiAddressNotifierProvider.notifier);
-          if (suggestion.province != null) {
-            notifier.selectProvince(suggestion.province);
-          }
-          if (suggestion.district != null) {
-            notifier.selectDistrict(suggestion.district);
-          }
-          notifier.selectSubDistrict(suggestion.subDistrict);
-        }
-
-        // Callback
-        widget.onVillageSelected?.call(suggestion.village);
+        widget.onSuggestionSelected?.call(suggestion);
       },
     );
   }

@@ -15,10 +15,7 @@ void main() {
   });
 
   Widget createSubject(Widget child) {
-    return ProviderScope(
-      overrides: [thaiAddressRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp(home: Scaffold(body: child)),
-    );
+    return MaterialApp(home: Scaffold(body: child));
   }
 
   group('ThaiAddressPicker', () {
@@ -35,6 +32,7 @@ void main() {
                 onPressed: () async {
                   final _ = await ThaiAddressPicker.showBottomSheet(
                     context: context,
+                    repository: repository,
                     useThai: true,
                     initialAddress: ThaiAddress(
                       provinceTh: p.nameTh,
@@ -77,7 +75,10 @@ void main() {
             builder: (context) {
               return ElevatedButton(
                 onPressed: () {
-                  ThaiAddressPicker.showDialog(context: context);
+                  ThaiAddressPicker.showDialog(
+                    context: context,
+                    repository: repository,
+                  );
                 },
                 child: const Text('Open'),
               );

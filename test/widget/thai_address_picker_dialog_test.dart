@@ -15,10 +15,7 @@ void main() {
   });
 
   Widget createSubject(Widget child) {
-    return ProviderScope(
-      overrides: [thaiAddressRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp(home: Scaffold(body: child)),
-    );
+    return MaterialApp(home: Scaffold(body: child));
   }
 
   testWidgets('showDialog opens dialog and cancels', (tester) async {
@@ -30,6 +27,7 @@ void main() {
               onPressed: () async {
                 await ThaiAddressPicker.showDialog(
                   context: context,
+                  repository: repository,
                   useThai: true,
                 );
               },
@@ -63,6 +61,7 @@ void main() {
               onPressed: () async {
                 result = await ThaiAddressPicker.showDialog(
                   context: context,
+                  repository: repository,
                   useThai: true,
                 );
               },
