@@ -7,24 +7,69 @@ import 'package:thai_address_picker/thai_address_picker.dart';
 /// 1. Form with autocomplete enabled (default)
 /// 2. Form with autocomplete disabled (simple text field)
 void main() {
-  runApp(const ProviderScope(child: MaterialApp(home: CompareZipCodeModesExample(), debugShowCheckedModeBanner: false)));
+  runApp(
+    const MaterialApp(
+      home: CompareZipCodeModesExample(),
+      debugShowCheckedModeBanner: false,
+    ),
+  );
 }
 
 class CompareZipCodeModesExample extends StatefulWidget {
   const CompareZipCodeModesExample({super.key});
 
   @override
-  State<CompareZipCodeModesExample> createState() => _CompareZipCodeModesExampleState();
+  State<CompareZipCodeModesExample> createState() =>
+      _CompareZipCodeModesExampleState();
 }
 
-class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample> {
+class _CompareZipCodeModesExampleState
+    extends State<CompareZipCodeModesExample> {
+  final _repository = ThaiAddressRepository();
+  late ThaiAddressController _autocompleteController;
+  late ThaiAddressController _simpleController;
   ThaiAddress? _autocompleteAddress;
   ThaiAddress? _simpleAddress;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _autocompleteController =
+        ThaiAddressController(repository: _repository);
+    _simpleController = ThaiAddressController(repository: _repository);
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _repository.initialize();
+    setState(() => _isLoading = false);
+  }
+
+  @override
+  void dispose() {
+    _autocompleteController.dispose();
+    _simpleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('เปรียบเทียบ Autocomplete vs Simple'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('เปรียบเทียบ Autocomplete vs Simple'), backgroundColor: Colors.blue, foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text('เปรียบเทียบ Autocomplete vs Simple'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -38,7 +83,13 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('💡 เปรียบเทียบสองแบบ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      '💡 เปรียบเทียบสองแบบ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     SizedBox(height: 8),
                     Text(
                       '• Autocomplete: แสดง suggestions ขณะพิมพ์\n'
@@ -52,22 +103,33 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
             const SizedBox(height: 20),
 
             // Autocomplete Form
-            _buildSectionTitle('1️⃣ แบบมี Autocomplete (เริ่มต้น)', Colors.green),
+            _buildSectionTitle(
+              '1️⃣ แบบมี Autocomplete (เริ่มต้น)',
+              Colors.green,
+            ),
             const SizedBox(height: 8),
             const Text(
               'พิมพ์รหัสไปรษณีย์เพื่อดู suggestions',
-              style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
             ),
             const SizedBox(height: 12),
             ThaiAddressForm(
-              showZipCodeAutocomplete: true, // เปิด autocomplete
+              controller: _autocompleteController,
+              showZipCodeAutocomplete: true,
               onChanged: (address) {
                 setState(() {
                   _autocompleteAddress = address;
                 });
               },
             ),
-            if (_autocompleteAddress != null) ...[const SizedBox(height: 12), _buildAddressSummary(_autocompleteAddress!, Colors.green)],
+            if (_autocompleteAddress != null) ...[
+              const SizedBox(height: 12),
+              _buildAddressSummary(_autocompleteAddress!, Colors.green),
+            ],
 
             const SizedBox(height: 32),
             const Divider(thickness: 2),
@@ -78,18 +140,26 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
             const SizedBox(height: 8),
             const Text(
               'พิมพ์รหัสไปรษณีย์โดยตรง (ไม่มี suggestions)',
-              style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
             ),
             const SizedBox(height: 12),
             ThaiAddressForm(
-              showZipCodeAutocomplete: false, // ปิด autocomplete
+              controller: _simpleController,
+              showZipCodeAutocomplete: false,
               onChanged: (address) {
                 setState(() {
                   _simpleAddress = address;
                 });
               },
             ),
-            if (_simpleAddress != null) ...[const SizedBox(height: 12), _buildAddressSummary(_simpleAddress!, Colors.orange)],
+            if (_simpleAddress != null) ...[
+              const SizedBox(height: 12),
+              _buildAddressSummary(_simpleAddress!, Colors.orange),
+            ],
 
             const SizedBox(height: 32),
 
@@ -111,7 +181,11 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
       ),
       child: Text(
         title,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
       ),
     );
   }
@@ -149,13 +223,25 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('📊 เปรียบเทียบฟีเจอร์', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              '📊 เปรียบเทียบฟีเจอร์',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Table(
               border: TableBorder.all(color: Colors.grey.shade300),
-              columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(1.5), 2: FlexColumnWidth(1.5)},
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1.5),
+                2: FlexColumnWidth(1.5),
+              },
               children: [
-                _buildTableRow('คุณสมบัติ', 'Autocomplete', 'Simple', isHeader: true),
+                _buildTableRow(
+                  'คุณสมบัติ',
+                  'Autocomplete',
+                  'Simple',
+                  isHeader: true,
+                ),
                 _buildTableRow('Suggestions ขณะพิมพ์', '✅', '❌'),
                 _buildTableRow('Auto-fill ที่อยู่', '✅', '❌'),
                 _buildTableRow('แสดงหลายพื้นที่', '✅', '❌'),
@@ -169,8 +255,16 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
     );
   }
 
-  TableRow _buildTableRow(String feature, String autocomplete, String simple, {bool isHeader = false}) {
-    final textStyle = TextStyle(fontWeight: isHeader ? FontWeight.bold : FontWeight.normal, fontSize: isHeader ? 14 : 13);
+  TableRow _buildTableRow(
+    String feature,
+    String autocomplete,
+    String simple, {
+    bool isHeader = false,
+  }) {
+    final textStyle = TextStyle(
+      fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+      fontSize: isHeader ? 14 : 13,
+    );
 
     final cellColor = isHeader ? Colors.grey.shade100 : Colors.white;
 
@@ -183,7 +277,11 @@ class _CompareZipCodeModesExampleState extends State<CompareZipCodeModesExample>
         ),
         Padding(
           padding: const EdgeInsets.all(8),
-          child: Text(autocomplete, style: textStyle, textAlign: TextAlign.center),
+          child: Text(
+            autocomplete,
+            style: textStyle,
+            textAlign: TextAlign.center,
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(8),

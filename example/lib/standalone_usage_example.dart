@@ -80,10 +80,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Standalone Usage Example'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Standalone Usage Example'), elevation: 0),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -109,27 +106,16 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '🚀 Pure Standalone - No State Management',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text('🚀 Pure Standalone - No State Management', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            const Text(
-              'ใช้ Repository โดยตรง - ไม่พึ่งพา Riverpod/Provider/GetX/BLoC',
-              style: TextStyle(fontSize: 14),
-            ),
+            const Text('ใช้ Repository โดยตรง - ไม่พึ่งพา Riverpod/Provider/GetX/BLoC', style: TextStyle(fontSize: 14)),
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '⚡ Maximum Performance:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                const Text('⚡ Maximum Performance:', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _buildPoint('O(1) HashMap lookup'),
                 _buildPoint('Isolate-based JSON parsing'),
@@ -165,12 +151,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '1️⃣ Cascading Selection',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text('1️⃣ Cascading Selection', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             // Province
             _buildProvinceDropdown(),
@@ -195,10 +176,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
 
     return DropdownButtonFormField<Province>(
       value: _selectedProvince,
-      decoration: const InputDecoration(
-        labelText: 'จังหวัด',
-        border: OutlineInputBorder(),
-      ),
+      decoration: const InputDecoration(labelText: 'จังหวัด', border: OutlineInputBorder()),
       items: provinces.map((p) {
         return DropdownMenuItem(value: p, child: Text(p.nameTh));
       }).toList(),
@@ -219,10 +197,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
 
     return DropdownButtonFormField<District>(
       value: _selectedDistrict,
-      decoration: const InputDecoration(
-        labelText: 'อำเภอ/เขต',
-        border: OutlineInputBorder(),
-      ),
+      decoration: const InputDecoration(labelText: 'อำเภอ/เขต', border: OutlineInputBorder()),
       items: districts.map((d) {
         return DropdownMenuItem(value: d, child: Text(d.nameTh));
       }).toList(),
@@ -238,16 +213,11 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
 
   Widget _buildSubDistrictDropdown() {
     // O(1) lookup + filtering
-    final subDistricts = _repository.getSubDistrictsByDistrict(
-      _selectedDistrict!.id,
-    );
+    final subDistricts = _repository.getSubDistrictsByDistrict(_selectedDistrict!.id);
 
     return DropdownButtonFormField<SubDistrict>(
       value: _selectedSubDistrict,
-      decoration: const InputDecoration(
-        labelText: 'ตำบล/แขวง',
-        border: OutlineInputBorder(),
-      ),
+      decoration: const InputDecoration(labelText: 'ตำบล/แขวง', border: OutlineInputBorder()),
       items: subDistricts.map((s) {
         return DropdownMenuItem(value: s, child: Text(s.nameTh));
       }).toList(),
@@ -277,14 +247,8 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'รหัสไปรษณีย์:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _selectedZipCode ?? 'N/A',
-                  style: const TextStyle(fontSize: 18),
-                ),
+                const Text('รหัสไปรษณีย์:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(_selectedZipCode ?? 'N/A', style: const TextStyle(fontSize: 18)),
               ],
             ),
           ),
@@ -302,12 +266,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '2️⃣ Zip Code Autocomplete (Reverse Lookup)',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text('2️⃣ Zip Code Autocomplete (Reverse Lookup)', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
               controller: _zipController,
@@ -326,10 +285,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
                   return;
                 }
 
-                final suggestions = _repository.searchZipCodes(
-                  query,
-                  maxResults: 10,
-                );
+                final suggestions = _repository.searchZipCodes(query, maxResults: 10);
 
                 setState(() => _zipSuggestions = suggestions);
               },
@@ -382,9 +338,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
           children: [
             Text(
               '3️⃣ Village Autocomplete (~70,000 villages)',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -395,19 +349,18 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
                 prefixIcon: Icon(Icons.home),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (query) {
+              onChanged: (query) async {
                 // Substring matching - O(k) where k is result size
                 if (query.isEmpty) {
                   setState(() => _villageSuggestions = []);
                   return;
                 }
 
-                final suggestions = _repository.searchVillages(
-                  query,
-                  maxResults: 15,
-                );
+                final suggestions = await _repository.searchVillages(query, maxResults: 15);
 
-                setState(() => _villageSuggestions = suggestions);
+                if (mounted) {
+                  setState(() => _villageSuggestions = suggestions);
+                }
               },
             ),
             const SizedBox(height: 8),
@@ -426,13 +379,8 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
                     return ListTile(
                       leading: const Icon(Icons.home_outlined),
                       title: Text(suggestion.village.nameTh),
-                      subtitle: Text(
-                        '${suggestion.displayMoo} • ${suggestion.subDistrict?.nameTh ?? ""}',
-                      ),
-                      trailing: Text(
-                        suggestion.district?.nameTh ?? '',
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                      subtitle: Text('${suggestion.displayMoo} • ${suggestion.subDistrict?.nameTh ?? ""}'),
+                      trailing: Text(suggestion.district?.nameTh ?? '', style: const TextStyle(fontSize: 12)),
                       onTap: () {
                         // Auto-fill all fields
                         setState(() {
@@ -467,12 +415,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '📋 สรุปข้อมูลที่เลือก',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text('📋 สรุปข้อมูลที่เลือก', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildSummaryRow('จังหวัด', _selectedProvince?.nameTh),
             _buildSummaryRow('Province', _selectedProvince?.nameEn),
@@ -493,20 +436,13 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
             // Performance info
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '⚡ Performance Stats:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  const Text('⚡ Performance Stats:', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Text('Total Provinces: ${_repository.provinces.length}'),
-                  Text('Total Villages: ${_repository.villages.length}'),
                   Text('Lookup Time: O(1)'),
                   Text('Search Time: O(k) where k = results'),
                 ],
@@ -527,10 +463,7 @@ class _StandaloneUsageExampleState extends State<StandaloneUsageExample> {
         children: [
           SizedBox(
             width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           ),
           Expanded(child: Text(value)),
         ],

@@ -1,430 +1,241 @@
 import 'package:flutter/material.dart';
 import 'package:thai_address_picker/thai_address_picker.dart';
 
-/// ตัวอย่างการใช้งานทั้งหมดรวมกัน
-/// Example: Complete Integration with Multiple Features
-///
-/// ตัวอย่างนี้แสดงวิธีการใช้ thai_address_picker แบบครอบคลุมทั้งหมด:
-/// - ThaiAddressForm
-/// - ZipCodeAutocomplete
-/// - VillageAutocomplete
-/// - การแสดงผลข้อมูลที่เลือก
-/// - State synchronization
-
-class CompleteIntegrationExample extends ConsumerStatefulWidget {
+/// ตัวอย่างการใช้งานแบบครบถ้วน
+/// Example: Complete integration with all widgets
+class CompleteIntegrationExample extends StatefulWidget {
   const CompleteIntegrationExample({super.key});
 
   @override
-  ConsumerState<CompleteIntegrationExample> createState() =>
-      _CompleteIntegrationExampleState();
+  State<CompleteIntegrationExample> createState() => _CompleteIntegrationExampleState();
 }
 
-class _CompleteIntegrationExampleState
-    extends ConsumerState<CompleteIntegrationExample> {
-  late PageController _pageController;
+class _CompleteIntegrationExampleState extends State<CompleteIntegrationExample> {
+  final _repository = ThaiAddressRepository();
+  late ThaiAddressController _controller;
+  final _pageController = PageController();
+  bool _isLoading = true;
+  String? _error;
   int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _controller = ThaiAddressController(repository: _repository);
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      await _repository.initialize();
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _controller.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
+  void _goToPage(int page) {
+    _pageController.animateToPage(page, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    setState(() => _currentPage = page);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final initAsync = ref.watch(repositoryInitProvider);
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Complete Integration')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Complete Integration')),
+        body: Center(child: Text('Error: $_error')),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Complete Integration Example'),
-        elevation: 0,
-      ),
-      body: initAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error, color: Colors.red, size: 64),
-              const SizedBox(height: 16),
-              Text('Error: $error'),
-            ],
+        title: const Text('Complete Integration'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Row(
+            children: [_buildTabButton('Form', 0), _buildTabButton('Zip Code', 1), _buildTabButton('Village', 2), _buildTabButton('Summary', 3)],
           ),
         ),
-        data: (_) => _buildContent(),
+      ),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (page) => setState(() => _currentPage = page),
+        children: [_buildFormPage(), _buildZipCodePage(), _buildVillagePage(), _buildSummaryPage()],
       ),
     );
   }
 
-  Widget _buildContent() {
-    return PageView(
-      controller: _pageController,
-      onPageChanged: (page) {
-        setState(() => _currentPage = page);
-      },
-      children: [
-        _buildStep1(), // Form ที่อยู่
-        _buildStep2(), // Zip Code Autocomplete
-        _buildStep3(), // Village Autocomplete
-        _buildStep4(), // Summary
-      ],
+  Widget _buildTabButton(String label, int page) {
+    final isActive = _currentPage == page;
+    return Expanded(
+      child: InkWell(
+        onTap: () => _goToPage(page),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: isActive ? Colors.white : Colors.transparent, width: 3)),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: isActive ? Colors.white : Colors.white60, fontWeight: isActive ? FontWeight.bold : FontWeight.normal),
+          ),
+        ),
+      ),
     );
   }
 
-  // ==================== Step 1: Address Form ====================
-
-  Widget _buildStep1() {
+  Widget _buildFormPage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildStepHeader(
-            step: 1,
-            title: '📋 กรอกที่อยู่',
-            description: 'เลือกจังหวัด อำเภอ ตำบลไทยของคุณ',
-          ),
+          const Text('Thai Address Form', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('เลือกที่อยู่จากดรอปดาวน์'),
           const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: ThaiAddressForm(useThai: true),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildNavigationButtons(
-            onNext: () => _pageController.nextPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
+          ThaiAddressForm(
+            controller: _controller,
+            useThai: true,
+            onChanged: (address) {
+              debugPrint('Address changed: ${address.toString()}');
+            },
           ),
         ],
       ),
     );
   }
 
-  // ==================== Step 2: Zip Code Autocomplete ====================
-
-  Widget _buildStep2() {
+  Widget _buildZipCodePage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildStepHeader(
-            step: 2,
-            title: '📮 ค้นหาด้วยรหัสไปรษณีย์',
-            description: 'พิมพ์รหัสไปรษณีย์เพื่อค้นหาที่อยู่อัตโนมัติ',
-          ),
+          const Text('Zip Code Autocomplete', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('พิมพ์รหัสไปรษณีย์เพื่อค้นหา'),
           const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: ZipCodeAutocomplete(
-                decoration: InputDecoration(
-                  labelText: 'รหัสไปรษณีย์',
-                  hintText: 'พิมพ์เช่น 10110',
-                  prefixIcon: const Icon(Icons.mail),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '💡 Tips:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildTip('รหัสไปรษณีย์ไทยประกอบด้วย 5 หลัก'),
-                _buildTip('ระบบจะค้นหาและเติมข้อมูลที่อยู่อัตโนมัติ'),
-                _buildTip('บางรหัสมีหลายพื้นที่ - เลือกได้'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildNavigationButtons(
-            onPrevious: () => _pageController.previousPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
-            onNext: () => _pageController.nextPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== Step 3: Village Autocomplete ====================
-
-  Widget _buildStep3() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStepHeader(
-            step: 3,
-            title: '🏘️ ค้นหาหมู่บ้าน',
-            description: 'ค้นหาหมู่บ้านที่ต้องการ พร้อมหมู่ที่ (Moo)',
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: VillageAutocomplete(
-                decoration: InputDecoration(
-                  labelText: 'หมู่บ้าน',
-                  hintText: 'พิมพ์ชื่อหมู่บ้าน',
-                  prefixIcon: const Icon(Icons.home),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '💡 Features:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildTip('ค้นหาจากตัวอักษรแรก'),
-                _buildTip('รองรับการค้นหาด้วย substring'),
-                _buildTip('แสดง Moo number (หมู่ที่) เพื่อความแม่นยำ'),
-                _buildTip('~70,000 หมู่บ้านทั่วประเทศ'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildNavigationButtons(
-            onPrevious: () => _pageController.previousPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
-            onNext: () => _pageController.nextPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== Step 4: Summary ====================
-
-  Widget _buildStep4() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStepHeader(
-            step: 4,
-            title: '✅ สรุปข้อมูล',
-            description: 'ตรวจสอบข้อมูลที่เลือก',
-          ),
-          const SizedBox(height: 16),
-          Consumer(
-            builder: (context, ref, _) {
-              final state = ref.watch(thaiAddressNotifierProvider);
-              final address = state.toThaiAddress();
-
-              return Card(
-                color: Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSummaryRow('จังหวัด', address.provinceTh),
-                      _buildSummaryRow('Province', address.provinceEn),
-                      const SizedBox(height: 8),
-                      _buildSummaryRow('อำเภอ/เขต', address.districtTh),
-                      _buildSummaryRow('District', address.districtEn),
-                      const SizedBox(height: 8),
-                      _buildSummaryRow('ตำบล/แขวง', address.subDistrictTh),
-                      _buildSummaryRow('Sub-district', address.subDistrictEn),
-                      const SizedBox(height: 8),
-                      _buildSummaryRow('รหัสไปรษณีย์', address.zipCode),
-                      if (address.lat != null)
-                        _buildSummaryRow('ละติจูด', address.lat.toString()),
-                      if (address.long != null)
-                        _buildSummaryRow('ลองจิจูด', address.long.toString()),
-                    ],
+          ZipCodeAutocomplete(
+            repository: _repository,
+            onSuggestionSelected: (suggestion) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'เลือก: ${suggestion.zipCode} - '
+                    '${suggestion.subDistrict.nameTh}',
                   ),
                 ),
               );
             },
           ),
-          const SizedBox(height: 24),
-          _buildNavigationButtons(
-            onPrevious: () => _pageController.previousPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVillagePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('Village Autocomplete', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('พิมพ์ชื่อหมู่บ้านเพื่อค้นหา'),
+          const SizedBox(height: 16),
+          VillageAutocomplete(
+            repository: _repository,
+            onSuggestionSelected: (suggestion) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'เลือก: ${suggestion.village.nameTh} - '
+                    '${suggestion.subDistrict?.nameTh ?? ''}',
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // ==================== Helper Widgets ====================
-
-  Widget _buildStepHeader({
-    required int step,
-    required String title,
-    required String description,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Text(
-                  '$step',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+  Widget _buildSummaryPage() {
+    return ValueListenableBuilder<ThaiAddressSelection>(
+      valueListenable: _controller,
+      builder: (context, state, _) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Address Summary', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSummaryRow('จังหวัด', state.province?.nameTh ?? '-'),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('อำเภอ/เขต', state.district?.nameTh ?? '-'),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('ตำบล/แขวง', state.subDistrict?.nameTh ?? '-'),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('รหัสไปรษณีย์', state.zipCode ?? '-'),
+                    ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  description,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Progress bar
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(value: _currentPage / 3, minHeight: 4),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTip(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          const Text('✓ ', style: TextStyle(color: Colors.green)),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String? value) {
-    if (value == null || value.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _controller.reset();
+                  _goToPage(0);
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('เริ่มใหม่'),
+              ),
+            ],
           ),
-          Expanded(child: Text(value)),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildNavigationButtons({
-    VoidCallback? onPrevious,
-    VoidCallback? onNext,
-  }) {
+  Widget _buildSummaryRow(String label, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (onPrevious != null)
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: onPrevious,
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('ย้อนกลับ'),
-            ),
-          ),
-        if (onPrevious != null && onNext != null) const SizedBox(width: 8),
-        if (onNext != null)
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: onNext,
-              icon: const Icon(Icons.arrow_forward),
-              label: const Text('ต่อไป'),
-            ),
-          ),
-        if (onPrevious == null && onNext == null)
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _pageController.jumpToPage(0);
-              },
-              icon: const Icon(Icons.home),
-              label: const Text('กลับหน้าแรก'),
-            ),
-          ),
+        SizedBox(
+          width: 120,
+          child: Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+        ),
+        Expanded(
+          child: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
       ],
     );
   }

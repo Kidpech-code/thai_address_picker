@@ -7,7 +7,7 @@ import 'package:thai_address_picker/thai_address_picker.dart';
 /// Useful when you want a simple text field for zip code input without
 /// the autocomplete suggestions dropdown.
 void main() {
-  runApp(const ProviderScope(child: MaterialApp(home: DisableZipCodeAutocompleteExample(), debugShowCheckedModeBanner: false)));
+  runApp(const MaterialApp(home: DisableZipCodeAutocompleteExample(), debugShowCheckedModeBanner: false));
 }
 
 class DisableZipCodeAutocompleteExample extends StatefulWidget {
@@ -18,10 +18,38 @@ class DisableZipCodeAutocompleteExample extends StatefulWidget {
 }
 
 class _DisableZipCodeAutocompleteExampleState extends State<DisableZipCodeAutocompleteExample> {
+  final _repository = ThaiAddressRepository();
+  late ThaiAddressController _controller;
   ThaiAddress? _selectedAddress;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ThaiAddressController(repository: _repository);
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _repository.initialize();
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('ปิด Zip Code Autocomplete'), backgroundColor: Colors.blue, foregroundColor: Colors.white),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('ปิด Zip Code Autocomplete'), backgroundColor: Colors.blue, foregroundColor: Colors.white),
       body: SingleChildScrollView(
@@ -65,6 +93,7 @@ class _DisableZipCodeAutocompleteExampleState extends State<DisableZipCodeAutoco
             const SizedBox(height: 16),
 
             ThaiAddressForm(
+              controller: _controller,
               // ปิด Zip Code Autocomplete
               showZipCodeAutocomplete: false,
               onChanged: (address) {

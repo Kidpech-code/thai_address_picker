@@ -3,153 +3,137 @@ import 'package:thai_address_picker/thai_address_picker.dart';
 
 /// ตัวอย่างการใช้งานโดยไม่ใช้ UI Widgets
 /// Example: Using data only without built-in widgets
-class CustomAddressFormExample extends ConsumerStatefulWidget {
+class CustomAddressFormExample extends StatefulWidget {
   const CustomAddressFormExample({super.key});
 
   @override
-  ConsumerState<CustomAddressFormExample> createState() =>
-      _CustomAddressFormExampleState();
+  State<CustomAddressFormExample> createState() => _CustomAddressFormExampleState();
 }
 
-class _CustomAddressFormExampleState
-    extends ConsumerState<CustomAddressFormExample> {
+class _CustomAddressFormExampleState extends State<CustomAddressFormExample> {
+  final _repository = ThaiAddressRepository();
+  late ThaiAddressController _controller;
   late TextEditingController _zipCodeController;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _zipCodeController = TextEditingController();
+    _controller = ThaiAddressController(repository: _repository);
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _repository.initialize();
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
   void dispose() {
     _zipCodeController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final initAsync = ref.watch(repositoryInitProvider);
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Custom UI Example')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Custom UI Example')),
-      body: initAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-        data: (_) => _buildCustomForm(),
-      ),
+      body: _buildCustomForm(),
     );
   }
 
   Widget _buildCustomForm() {
-    final repository = ref.watch(thaiAddressRepositoryProvider);
-    final state = ref.watch(thaiAddressNotifierProvider);
-    final notifier = ref.read(thaiAddressNotifierProvider.notifier);
+    return ValueListenableBuilder<ThaiAddressSelection>(
+      valueListenable: _controller,
+      builder: (context, state, _) {
+        // Sync zip code from state to controller if changed externally
+        if (_zipCodeController.text != (state.zipCode ?? '')) {
+          _zipCodeController.text = state.zipCode ?? '';
+        }
 
-    // Sync zip code from state to controller if changed externally
-    if (_zipCodeController.text != (state.zipCode ?? '')) {
-      _zipCodeController.text = state.zipCode ?? '';
-    }
+        // Get data from repository
+        final provinces = _repository.provinces;
+        final districts = state.province != null ? _repository.getDistrictsByProvince(state.province!.id) : <District>[];
+        final subDistricts = state.district != null ? _repository.getSubDistrictsByDistrict(state.district!.id) : <SubDistrict>[];
 
-    // Get data from repository
-    final provinces = repository.provinces;
-    final districts = state.selectedProvince != null
-        ? repository.getDistrictsByProvince(state.selectedProvince!.id)
-        : <District>[];
-    final subDistricts = state.selectedDistrict != null
-        ? repository.getSubDistrictsByDistrict(state.selectedDistrict!.id)
-        : <SubDistrict>[];
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Custom Province Dropdown
-          _buildCustomDropdown<Province>(
-            label: 'จังหวัด',
-            value: state.selectedProvince,
-            items: provinces,
-            itemBuilder: (province) => Text(province.nameTh),
-            onChanged: (province) => notifier.selectProvince(province),
-          ),
-          const SizedBox(height: 16),
-
-          // Custom District Dropdown
-          _buildCustomDropdown<District>(
-            label: 'อำเภอ/เขต',
-            value: state.selectedDistrict,
-            items: districts,
-            itemBuilder: (district) => Text(district.nameTh),
-            onChanged: state.selectedProvince != null
-                ? (district) => notifier.selectDistrict(district)
-                : null,
-          ),
-          const SizedBox(height: 16),
-
-          // Custom SubDistrict Dropdown
-          _buildCustomDropdown<SubDistrict>(
-            label: 'ตำบล/แขวง',
-            value: state.selectedSubDistrict,
-            items: subDistricts,
-            itemBuilder: (subDistrict) => Text(subDistrict.nameTh),
-            onChanged: state.selectedDistrict != null
-                ? (subDistrict) => notifier.selectSubDistrict(subDistrict)
-                : null,
-          ),
-          const SizedBox(height: 16),
-
-          // Custom Zip Code Field
-          TextField(
-            decoration: const InputDecoration(
-              labelText: 'รหัสไปรษณีย์',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.local_post_office),
-            ),
-            controller: _zipCodeController,
-            keyboardType: TextInputType.number,
-            maxLength: 5,
-            onChanged: (value) => notifier.setZipCode(value),
-          ),
-
-          // Display selected address
-          if (state.selectedProvince != null) ...[
-            const SizedBox(height: 24),
-            Card(
-              color: Colors.blue.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'ที่อยู่ที่เลือก:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const Divider(),
-                    _buildInfoRow(
-                      'จังหวัด',
-                      state.selectedProvince?.nameTh ?? '-',
-                    ),
-                    _buildInfoRow(
-                      'อำเภอ',
-                      state.selectedDistrict?.nameTh ?? '-',
-                    ),
-                    _buildInfoRow(
-                      'ตำบล',
-                      state.selectedSubDistrict?.nameTh ?? '-',
-                    ),
-                    _buildInfoRow('รหัสไปรษณีย์', state.zipCode ?? '-'),
-                  ],
-                ),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Custom Province Dropdown
+              _buildCustomDropdown<Province>(
+                label: 'จังหวัด',
+                value: state.province,
+                items: provinces,
+                itemBuilder: (province) => Text(province.nameTh),
+                onChanged: (province) => _controller.selectProvince(province),
               ),
-            ),
-          ],
-        ],
-      ),
+              const SizedBox(height: 16),
+
+              // Custom District Dropdown
+              _buildCustomDropdown<District>(
+                label: 'อำเภอ/เขต',
+                value: state.district,
+                items: districts,
+                itemBuilder: (district) => Text(district.nameTh),
+                onChanged: state.province != null ? (district) => _controller.selectDistrict(district) : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Custom SubDistrict Dropdown
+              _buildCustomDropdown<SubDistrict>(
+                label: 'ตำบล/แขวง',
+                value: state.subDistrict,
+                items: subDistricts,
+                itemBuilder: (subDistrict) => Text(subDistrict.nameTh),
+                onChanged: state.district != null ? (subDistrict) => _controller.selectSubDistrict(subDistrict) : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Custom Zip Code Field
+              TextField(
+                decoration: const InputDecoration(labelText: 'รหัสไปรษณีย์', border: OutlineInputBorder(), prefixIcon: Icon(Icons.local_post_office)),
+                controller: _zipCodeController,
+                keyboardType: TextInputType.number,
+                maxLength: 5,
+                onChanged: (value) => _controller.setZipCode(value),
+              ),
+
+              // Display selected address
+              if (state.province != null) ...[
+                const SizedBox(height: 24),
+                Card(
+                  color: Colors.blue.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('ที่อยู่ที่เลือก:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Divider(),
+                        _buildInfoRow('จังหวัด', state.province?.nameTh ?? '-'),
+                        _buildInfoRow('อำเภอ', state.district?.nameTh ?? '-'),
+                        _buildInfoRow('ตำบล', state.subDistrict?.nameTh ?? '-'),
+                        _buildInfoRow('รหัสไปรษณีย์', state.zipCode ?? '-'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -187,10 +171,7 @@ class _CustomAddressFormExampleState
         children: [
           SizedBox(width: 100, child: Text('$label:')),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
